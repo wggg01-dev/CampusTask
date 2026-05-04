@@ -23,8 +23,8 @@ pubspec.yaml                 # Dependencies
 
 ## Supabase Tables
 
-- `bank_accounts` — stores user bank details
-  - `user_id` (FK, unique), `bank_name`, `account_number`, `account_name`, `updated_at`
+- `profiles` — stores user profile + bank details
+  - `id` (FK → auth.users), `bank_account_number`, `bank_code`, `bank_name`
 
 ## Key Dependencies
 
