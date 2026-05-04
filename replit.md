@@ -19,6 +19,7 @@ lib/
     dashboard_screen.dart    # Balance card + task list
     bank_setup_screen.dart      # Payout settings — bank name, code, account number → profiles table
     payout_history_screen.dart  # Real-time withdrawal history streamed from payouts table
+    spin_wheel_screen.dart      # Daily spin wheel with animated CustomPainter wheel + Supabase reward crediting
 pubspec.yaml                 # Dependencies
 ```
 
