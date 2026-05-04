@@ -51,22 +51,31 @@ class DashboardScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: Colors.white10),
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Available Balance',
                     style: TextStyle(color: Colors.white70),
                   ),
-                  SizedBox(height: 8),
-                  // TODO: Hook up real-time balance from Supabase
-                  Text(
-                    '₦24,500.00',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF10B981),
-                    ),
+                  const SizedBox(height: 8),
+                  StreamBuilder(
+                    stream: Supabase.instance.client
+                        .from('profiles')
+                        .stream(primaryKey: ['id'])
+                        .eq('id', user!.id),
+                    builder: (context, snapshot) {
+                      final balance =
+                          snapshot.data?.first['total_earned_ngn'] ?? 0;
+                      return Text(
+                        '₦$balance.00',
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF10B981),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
