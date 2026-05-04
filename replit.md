@@ -1,0 +1,44 @@
+# CampusTask
+
+A Flutter + Supabase fintech app that lets students earn money by completing tasks (surveys, offerwalls).
+
+## Tech Stack
+
+- **Framework**: Flutter (Dart 3.10)
+- **Backend / Auth**: Supabase
+- **Font**: Plus Jakarta Sans (via Google Fonts)
+- **Theme**: Deep Navy (#0F172A) + Emerald Green (#10B981), Material 3 dark
+
+## Project Structure
+
+```
+lib/
+  main.dart                  # App entry point, ThemeData, CampusTaskApp, AuthGate
+  screens/
+    login_screen.dart        # Email/password login via Supabase
+    dashboard_screen.dart    # Balance card + task list
+pubspec.yaml                 # Dependencies
+```
+
+## Key Dependencies
+
+- `supabase_flutter: ^2.3.0` — Auth + real-time database
+- `google_fonts: ^6.2.1` — Plus Jakarta Sans typography
+
+## Auth Flow
+
+`AuthGate` listens to Supabase's `onAuthStateChange` stream:
+- Session exists → `DashboardScreen`
+- No session → `LoginScreen`
+
+## Environment Variables
+
+Set these before running (via `--dart-define` or your environment):
+- `SUPABASE_URL` — Your Supabase project URL
+- `SUPABASE_ANON_KEY` — Your Supabase anonymous key
+
+## Planned Features
+
+- Real-time balance from Supabase
+- Offerwall / task integration
+- Withdrawal flow
