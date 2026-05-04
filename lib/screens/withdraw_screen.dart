@@ -41,22 +41,35 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   }
 
   Future<void> _requestWithdrawal() async {
-    setState(() => _isSubmitting = true);
-    try {
-      final user = Supabase.instance.client.auth.currentUser;
-      final payoutAmount = _balance - _fee;
+  setState(() => _isSubmitting = true);
+  try {
+    final user = Supabase.instance.client.auth.currentUser;
+    final payoutAmount = _balance - _fee; //
 
-      // Log payout request
-      await Supabase.instance.client.from('payouts').insert({
-        'user_id': user!.id,
-        'amount_ngn': payoutAmount,
-        'status': 'pending',
-      });
+    // 1. Log the payout request
+    await Supabase.instance.client.from('payouts').insert({
+      'user_id': user!.id,
+      'amount_ngn': payoutAmount,
+      'fee_charged': _fee,
+      'status': 'pending',
+    });
 
-      // Deduct balance
-      await Supabase.instance.client.from('profiles').update({
-        'total_earned_ngn': 0,
-      }).eq('id', user.id);
+    // 2. Deduct only from the AVAILABLE balance
+    await Supabase.instance.client.from('profiles').update({
+      'available_balance_ngn': 0, 
+    }).eq('id', user.id);
+
+    if (mounted) {
+      _showSuccessDialog(payoutAmount); // Show the "7 days" message
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  } finally {
+    if (mounted) setState(() => _isSubmitting = false);
+  }
+  }
 
       if (mounted) {
         showDialog(
