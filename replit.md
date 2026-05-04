@@ -17,7 +17,8 @@ lib/
   screens/
     login_screen.dart        # Email/password login via Supabase
     dashboard_screen.dart    # Balance card + task list
-    bank_setup_screen.dart   # Bank account form (bank name, account number, account name)
+    bank_setup_screen.dart      # Payout settings — bank name, code, account number → profiles table
+    payout_history_screen.dart  # Real-time withdrawal history streamed from payouts table
 pubspec.yaml                 # Dependencies
 ```
 
@@ -25,6 +26,8 @@ pubspec.yaml                 # Dependencies
 
 - `profiles` — stores user profile + bank details
   - `id` (FK → auth.users), `bank_account_number`, `bank_code`, `bank_name`
+- `payouts` — withdrawal records (real-time stream)
+  - `id`, `user_id` (FK → auth.users), `amount_ngn`, `status` (sent | pending), `created_at`
 
 ## Key Dependencies
 
