@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'bank_setup_screen.dart';
 import 'payout_history_screen.dart';
 import 'spin_wheel_screen.dart';
+import 'withdraw_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -23,6 +24,13 @@ class DashboardScreen extends StatelessWidget {
             tooltip: 'Daily Spin',
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const SpinWheelScreen()),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.arrow_circle_up_outlined),
+            tooltip: 'Withdraw',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const WithdrawScreen()),
             ),
           ),
           IconButton(
