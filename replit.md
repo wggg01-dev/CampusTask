@@ -29,6 +29,8 @@ pubspec.yaml                 # Dependencies
 
 - `profiles` — stores user profile + bank details
   - `id` (FK → auth.users), `bank_account_number`, `bank_code`, `bank_name`
+  - `available_balance_ngn` — cleared funds ready to withdraw
+  - `pending_balance_ngn` — funds in 7-day hold period
 - `payouts` — withdrawal records (real-time stream)
   - `id`, `user_id` (FK → auth.users), `amount_ngn`, `status` (sent | pending), `created_at`
 

@@ -59,42 +59,97 @@ class DashboardScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // BALANCE CARD
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white10),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Available Balance',
-                    style: TextStyle(color: Colors.white70),
+            StreamBuilder(
+              stream: Supabase.instance.client
+                  .from('profiles')
+                  .stream(primaryKey: ['id'])
+                  .eq('id', user!.id),
+              builder: (context, snapshot) {
+                final data = snapshot.data?.first;
+                final available = data?['available_balance_ngn'] ?? 0;
+                final pending = data?['pending_balance_ngn'] ?? 0;
+
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E293B),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.white10),
                   ),
-                  const SizedBox(height: 8),
-                  StreamBuilder(
-                    stream: Supabase.instance.client
-                        .from('profiles')
-                        .stream(primaryKey: ['id'])
-                        .eq('id', user!.id),
-                    builder: (context, snapshot) {
-                      final balance =
-                          snapshot.data?.first['total_earned_ngn'] ?? 0;
-                      return Text(
-                        '₦$balance.00',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // AVAILABLE BALANCE
+                      const Text(
+                        'Available Balance',
+                        style: TextStyle(color: Colors.white54, fontSize: 13),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '₦${available.toString()}.00',
                         style: const TextStyle(
-                          fontSize: 32,
+                          fontSize: 34,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF10B981),
                         ),
-                      );
-                    },
+                      ),
+
+                      const SizedBox(height: 20),
+                      const Divider(color: Colors.white10),
+                      const SizedBox(height: 16),
+
+                      // PENDING BALANCE
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Pending Balance',
+                                style: TextStyle(
+                                    color: Colors.white54, fontSize: 13),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '₦${pending.toString()}.00',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.amber,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                  color: Colors.amber.withOpacity(0.3)),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.schedule,
+                                    color: Colors.amber, size: 13),
+                                SizedBox(width: 4),
+                                Text(
+                                  '7-day hold',
+                                  style: TextStyle(
+                                      color: Colors.amber, fontSize: 11),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
 
             const SizedBox(height: 32),
