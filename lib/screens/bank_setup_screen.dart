@@ -12,12 +12,11 @@ class _BankSetupScreenState extends State<BankSetupScreen> {
   final _accController = TextEditingController();
   String? _selectedBankCode;
 
-  // Manual list for speed, or fetch from Flutterwave API
   final List<Map<String, String>> _banks = [
-    {'name': 'First Bank', 'code': '011'},
-    {'name': 'GTBank', 'code': '058'},
-    {'name': 'Zenith Bank', 'code': '057'},
-    {'name': 'Access Bank', 'code': '044'},
+    {'name': 'PalmPay', 'code': '999991'},
+    {'name': 'OPay', 'code': '999992'},
+    {'name': 'Kuda', 'code': '090267'},
+    {'name': 'Moniepoint', 'code': '50515'},
   ];
 
   Future<void> _saveBank() async {
