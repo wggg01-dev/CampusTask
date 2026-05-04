@@ -20,6 +20,7 @@ lib/
     bank_setup_screen.dart      # Payout settings — bank name, code, account number → profiles table
     payout_history_screen.dart  # Real-time withdrawal history streamed from payouts table
     spin_wheel_screen.dart      # Daily spin wheel with animated CustomPainter wheel + Supabase reward crediting
+    signup_screen.dart          # Registration with email, password, optional referral code + profile creation
     rules_screen.dart           # One-time rules acceptance gate shown before dashboard on first login
     withdraw_screen.dart        # Withdrawal screen with ₦2000 minimum check and ₦50 fee deduction
 pubspec.yaml                 # Dependencies
