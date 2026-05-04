@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SpinWheelScreen extends StatefulWidget {
   const SpinWheelScreen({super.key});
@@ -39,7 +40,7 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
   Future<void> _doSpin() async {
     if (_isSpinning) return;
 
-    // Spin animation only — reward logic lives in Supabase Edge Function
+    // Start wheel animation
     final fullSpins = 5 * 2 * pi;
     final randomLand = Random().nextDouble() * 2 * pi;
     _targetAngle = fullSpins + randomLand;
@@ -50,8 +51,148 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
 
     setState(() => _isSpinning = true);
     _controller.reset();
-    await _controller.forward();
+
+    // Run animation and Edge Function call in parallel
+    await Future.wait([
+      _controller.forward(),
+      _handleSpin(),
+    ]);
+
     setState(() => _isSpinning = false);
+  }
+
+  Future<void> _handleSpin() async {
+    try {
+      final response = await Supabase.instance.client.functions
+          .invoke('daily-spin');
+      final winAmount = response.data['win'] as num;
+
+      if (!mounted) return;
+
+      if (winAmount > 0) {
+        _showSuccessAnimation(winAmount);
+      } else {
+        _showTryAgainMessage();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showError("You've already spun today! Come back tomorrow.");
+    }
+  }
+
+  void _showSuccessAnimation(num winAmount) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          '🎉 Jackpot!',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+          textAlign: TextAlign.center,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Text(
+              '₦$winAmount',
+              style: const TextStyle(
+                fontSize: 40,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF10B981),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'has been added to your pending balance.',
+              style: TextStyle(color: Colors.white60, height: 1.5),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          Center(
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF10B981),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Awesome!'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTryAgainMessage() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Better luck tomorrow!',
+          style: TextStyle(fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+        content: const Text(
+          'No reward this time. You get a fresh spin every day — keep coming back!',
+          style: TextStyle(color: Colors.white60, height: 1.5),
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          Center(
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF334155),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('OK'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showError(String message) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Hold on!',
+          style: TextStyle(fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(color: Colors.white60, height: 1.5),
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          Center(
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF334155),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Got it'),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
