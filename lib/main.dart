@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/rules_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,9 +51,42 @@ class AuthGate extends StatelessWidget {
       builder: (context, snapshot) {
         final session = snapshot.data?.session;
         if (session != null) {
-          return const DashboardScreen();
+          return const _RulesGate();
         }
         return const LoginScreen();
+      },
+    );
+  }
+}
+
+// Checks whether the logged-in user has accepted the rules.
+// Shows RulesScreen once on first login, then goes straight to Dashboard.
+class _RulesGate extends StatelessWidget {
+  const _RulesGate();
+
+  @override
+  Widget build(BuildContext context) {
+    final user = Supabase.instance.client.auth.currentUser;
+
+    return FutureBuilder(
+      future: Supabase.instance.client
+          .from('profiles')
+          .select('has_accepted_rules')
+          .eq('id', user!.id)
+          .single(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: Color(0xFF0F172A),
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final hasAccepted =
+            snapshot.data?['has_accepted_rules'] == true;
+        if (hasAccepted) {
+          return const DashboardScreen();
+        }
+        return const RulesScreen();
       },
     );
   }
