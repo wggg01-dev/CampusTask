@@ -91,7 +91,7 @@ class DashboardScreen extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 34,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF10B981),
+                          color: Color(0xFF4ADE80), // Bright green — ready to cash out
                         ),
                       ),
 
@@ -117,7 +117,7 @@ class DashboardScreen extends StatelessWidget {
                                 style: const TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.amber,
+                                  color: Color(0xFFFBBF24), // Amber — earning, almost there
                                 ),
                               ),
                             ],

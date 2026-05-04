@@ -33,7 +33,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
         .single();
 
     setState(() {
-      _balance = data['total_earned_ngn'] ?? 0;
+      _balance = data['available_balance_ngn'] ?? 0;
       _bankName = data['bank_name'];
       _accountNumber = data['bank_account_number'];
       _isLoading = false;
