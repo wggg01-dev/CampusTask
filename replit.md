@@ -17,8 +17,14 @@ lib/
   screens/
     login_screen.dart        # Email/password login via Supabase
     dashboard_screen.dart    # Balance card + task list
+    bank_setup_screen.dart   # Bank account form (bank name, account number, account name)
 pubspec.yaml                 # Dependencies
 ```
+
+## Supabase Tables
+
+- `bank_accounts` — stores user bank details
+  - `user_id` (FK, unique), `bank_name`, `account_number`, `account_name`, `updated_at`
 
 ## Key Dependencies
 
