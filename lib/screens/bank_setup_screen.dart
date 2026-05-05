@@ -27,7 +27,7 @@ class _BankSetupScreenState extends State<BankSetupScreen> {
       'bank_name': _banks.firstWhere((b) => b['code'] == _selectedBankCode)['name'],
     }).eq('id', user!.id);
 
-    Navigator.pop(context);
+    if (mounted) Navigator.pop(context);
   }
 
   @override

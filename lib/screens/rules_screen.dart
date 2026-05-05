@@ -107,8 +107,8 @@ class _RulesScreenState extends State<RulesScreen> {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withOpacity(0.12),
+                    decoration: const BoxDecoration(
+                      color: Color(0x1F10B981),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -168,7 +168,7 @@ class _RulesScreenState extends State<RulesScreen> {
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   if (index == _rules.length) {
-                    return _WarningBanner();
+                    return const _WarningBanner();
                   }
                   return _RuleTile(rule: _rules[index]);
                 },
@@ -186,8 +186,7 @@ class _RulesScreenState extends State<RulesScreen> {
                       : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF10B981),
-                    disabledBackgroundColor:
-                        const Color(0xFF10B981).withOpacity(0.25),
+                    disabledBackgroundColor: const Color(0x4010B981),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -255,7 +254,7 @@ class _RuleTile extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withOpacity(0.12),
+              color: const Color(0x1F10B981),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(rule.icon, color: const Color(0xFF10B981), size: 20),
@@ -291,14 +290,16 @@ class _RuleTile extends StatelessWidget {
 }
 
 class _WarningBanner extends StatelessWidget {
+  const _WarningBanner();
+
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.redAccent.withOpacity(0.08),
+        color: const Color(0x14FF5252),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+        border: Border.all(color: const Color(0x4DFF5252)),
       ),
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,

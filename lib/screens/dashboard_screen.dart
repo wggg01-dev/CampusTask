@@ -126,10 +126,10 @@ class DashboardScreen extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Colors.amber.withOpacity(0.1),
+                              color: const Color(0x1AFBBF24),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                  color: Colors.amber.withOpacity(0.3)),
+                                  color: const Color(0x4DFBBF24)),
                             ),
                             child: const Row(
                               children: [

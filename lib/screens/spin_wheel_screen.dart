@@ -275,8 +275,7 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                 onPressed: _isSpinning ? null : _doSpin,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF10B981),
-                  disabledBackgroundColor:
-                      const Color(0xFF10B981).withOpacity(0.3),
+                  disabledBackgroundColor: const Color(0x4D10B981),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),

@@ -28,7 +28,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
     final user = Supabase.instance.client.auth.currentUser;
     final data = await Supabase.instance.client
         .from('profiles')
-        .select('total_earned_ngn, bank_name, bank_account_number')
+        .select('available_balance_ngn, bank_name, bank_account_number')
         .eq('id', user!.id)
         .single();
 
@@ -41,81 +41,72 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   }
 
   Future<void> _requestWithdrawal() async {
-  setState(() => _isSubmitting = true);
-  try {
-    final user = Supabase.instance.client.auth.currentUser;
-    final payoutAmount = _balance - _fee; //
+    setState(() => _isSubmitting = true);
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      final payoutAmount = _balance - _fee;
 
-    // 1. Log the payout request
-    await Supabase.instance.client.from('payouts').insert({
-      'user_id': user!.id,
-      'amount_ngn': payoutAmount,
-      'fee_charged': _fee,
-      'status': 'pending',
-    });
+      // 1. Log the payout request
+      await Supabase.instance.client.from('payouts').insert({
+        'user_id': user!.id,
+        'amount_ngn': payoutAmount,
+        'fee_charged': _fee,
+        'status': 'pending',
+      });
 
-    // 2. Deduct only from the AVAILABLE balance
-    await Supabase.instance.client.from('profiles').update({
-      'available_balance_ngn': 0, 
-    }).eq('id', user.id);
-
-    if (mounted) {
-      _showSuccessDialog(payoutAmount); // Show the "7 days" message
-    }
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-    }
-  } finally {
-    if (mounted) setState(() => _isSubmitting = false);
-  }
-  }
+      // 2. Deduct only from the available balance
+      await Supabase.instance.client
+          .from('profiles')
+          .update({'available_balance_ngn': 0}).eq('id', user.id);
 
       if (mounted) {
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            backgroundColor: const Color(0xFF1E293B),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: const Text(
-              'Withdrawal Requested',
-              style: TextStyle(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            content: Text(
-              '₦${payoutAmount.toStringAsFixed(0)} will be sent to $_bankName within 7 days.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70, height: 1.5),
-            ),
-            actions: [
-              Center(
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).pop();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF10B981),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Done'),
-                ),
-              ),
-            ],
-          ),
-        );
+        _showSuccessDialog(payoutAmount);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
+          SnackBar(content: Text('Error: $e')),
         );
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  void _showSuccessDialog(num payoutAmount) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Withdrawal Requested',
+          style: TextStyle(fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+        content: Text(
+          '₦${payoutAmount.toStringAsFixed(0)} will be sent to $_bankName within 7 days.',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white70, height: 1.5),
+        ),
+        actions: [
+          Center(
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF10B981),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Done'),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -161,7 +152,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                           style: const TextStyle(
                             fontSize: 36,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF10B981),
+                            color: Color(0xFF4ADE80),
                           ),
                         ),
                       ],
@@ -176,10 +167,9 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(0.08),
+                        color: const Color(0x14FBBF24),
                         borderRadius: BorderRadius.circular(16),
-                        border:
-                            Border.all(color: Colors.amber.withOpacity(0.3)),
+                        border: Border.all(color: const Color(0x4DFBBF24)),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,7 +208,6 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
 
                   // CONDITION B — balance sufficient
                   if (_balance >= _minBalance) ...[
-                    // Payout breakdown
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
@@ -230,19 +219,19 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                       child: Column(
                         children: [
                           _BreakdownRow(
-                              label: 'Your balance',
-                              value:
-                                  '₦${_balance.toStringAsFixed(0)}'),
+                            label: 'Your balance',
+                            value: '₦${_balance.toStringAsFixed(0)}',
+                          ),
                           const Divider(color: Colors.white10, height: 24),
                           _BreakdownRow(
-                              label: 'Processing fee',
-                              value: '- ₦${_fee.toStringAsFixed(0)}',
-                              valueColor: Colors.redAccent),
+                            label: 'Processing fee',
+                            value: '- ₦${_fee.toStringAsFixed(0)}',
+                            valueColor: Colors.redAccent,
+                          ),
                           const Divider(color: Colors.white10, height: 24),
                           _BreakdownRow(
                             label: 'You receive',
-                            value:
-                                '₦${(_balance - _fee).toStringAsFixed(0)}',
+                            value: '₦${(_balance - _fee).toStringAsFixed(0)}',
                             valueColor: const Color(0xFF10B981),
                             bold: true,
                           ),
@@ -252,7 +241,6 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Destination bank
                     if (_bankName != null)
                       Container(
                         padding: const EdgeInsets.all(16),
@@ -295,15 +283,13 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
 
                     const Spacer(),
 
-                    // WITHDRAW BUTTON
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: _isSubmitting ? null : _requestWithdrawal,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF10B981),
-                          disabledBackgroundColor:
-                              const Color(0xFF10B981).withOpacity(0.4),
+                          disabledBackgroundColor: const Color(0x6610B981),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),

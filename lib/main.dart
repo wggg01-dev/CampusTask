@@ -9,8 +9,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
-    url: const String.fromEnvironment('SUPABASE_URL', defaultValue: 'YOUR_SUPABASE_URL'),
-    anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: 'YOUR_SUPABASE_ANON_KEY'),
+    url: 'YOUR_SUPABASE_URL',
+    anonKey: 'YOUR_SUPABASE_ANON_KEY',
   );
 
   runApp(const CampusTaskApp());
@@ -81,8 +81,7 @@ class _RulesGate extends StatelessWidget {
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        final hasAccepted =
-            snapshot.data?['has_accepted_rules'] == true;
+        final hasAccepted = snapshot.data?['has_accepted_rules'] == true;
         if (hasAccepted) {
           return const DashboardScreen();
         }
