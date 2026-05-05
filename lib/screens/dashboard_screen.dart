@@ -160,7 +160,11 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 16),
 
             FutureBuilder<List<Map<String, dynamic>>>(
-              future: Supabase.instance.client.from('tasks').select(),
+              future: Supabase.instance.client
+                  .from('tasks')
+                  .select('app_name, title, user_payout_ngn, task_type, slots_left, is_active, priority_level')
+                  .eq('is_active', true)
+                  .order('priority_level', ascending: false),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -197,33 +201,139 @@ class DashboardScreen extends StatelessWidget {
                     final title = task['title'] as String? ?? 'Task';
                     final appName = task['app_name'] as String? ?? '';
                     final payout = task['user_payout_ngn'];
-                    final rewardText = payout != null
-                        ? '₦${payout.toString()} reward'
-                        : 'Tap to view';
+                    final taskType = task['task_type'] as String? ?? '';
+                    final slotsLeft = task['slots_left'] as int?;
+                    final priority = task['priority_level'] as int? ?? 0;
+                    final isHighPriority = priority >= 8;
+                    final noSlots = slotsLeft != null && slotsLeft <= 0;
 
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      color: const Color(0xFF1E293B),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: ListTile(
-                        leading: const CircleAvatar(
-                          backgroundColor: Color(0xFF334155),
-                          child: Icon(Icons.bolt, color: Color(0xFFFBBF24)),
+                    return Opacity(
+                      opacity: noSlots ? 0.45 : 1.0,
+                      child: Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        color: const Color(0xFF1E293B),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: isHighPriority
+                              ? const BorderSide(color: Color(0xFFFBBF24), width: 1)
+                              : BorderSide.none,
                         ),
-                        title: Text(title),
-                        subtitle: Text(
-                          appName.isNotEmpty
-                              ? '$appName · $rewardText'
-                              : rewardText,
-                          style: const TextStyle(
-                              color: Color(0xFF4ADE80), fontSize: 12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: const Color(0xFF334155),
+                                child: Icon(
+                                  Icons.bolt,
+                                  color: isHighPriority
+                                      ? const Color(0xFFFBBF24)
+                                      : const Color(0xFF4ADE80),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // App name + priority badge
+                                    Row(
+                                      children: [
+                                        if (appName.isNotEmpty)
+                                          Text(
+                                            appName,
+                                            style: const TextStyle(
+                                              color: Colors.white54,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        if (isHighPriority) ...[
+                                          const SizedBox(width: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0x33FBBF24),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: const Text(
+                                              'HOT',
+                                              style: TextStyle(
+                                                color: Color(0xFFFBBF24),
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                    const SizedBox(height: 3),
+                                    // Task title
+                                    Text(
+                                      title,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    // Payout + type + slots row
+                                    Row(
+                                      children: [
+                                        if (payout != null)
+                                          Text(
+                                            '₦${payout.toString()}',
+                                            style: const TextStyle(
+                                              color: Color(0xFF4ADE80),
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        if (taskType.isNotEmpty) ...[
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF334155),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              taskType,
+                                              style: const TextStyle(
+                                                color: Colors.white54,
+                                                fontSize: 10,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                        if (slotsLeft != null) ...[
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            noSlots
+                                                ? 'Full'
+                                                : '$slotsLeft slots left',
+                                            style: TextStyle(
+                                              color: noSlots
+                                                  ? Colors.redAccent
+                                                  : Colors.white38,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.chevron_right,
+                                  color: Colors.white38),
+                            ],
+                          ),
                         ),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () {
-                          // TODO: open task URL or offerwall
-                        },
                       ),
                     );
                   },
