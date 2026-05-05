@@ -195,10 +195,10 @@ class DashboardScreen extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final task = tasks[index];
                     final title = task['title'] as String? ?? 'Task';
-                    final platform = task['platform'] as String? ?? '';
-                    final reward = task['reward_ngn'];
-                    final rewardText = reward != null
-                        ? '₦${reward.toString()} reward'
+                    final appName = task['app_name'] as String? ?? '';
+                    final payout = task['user_payout_ngn'];
+                    final rewardText = payout != null
+                        ? '₦${payout.toString()} reward'
                         : 'Tap to view';
 
                     return Card(
@@ -214,8 +214,8 @@ class DashboardScreen extends StatelessWidget {
                         ),
                         title: Text(title),
                         subtitle: Text(
-                          platform.isNotEmpty
-                              ? '$platform · $rewardText'
+                          appName.isNotEmpty
+                              ? '$appName · $rewardText'
                               : rewardText,
                           style: const TextStyle(
                               color: Color(0xFF4ADE80), fontSize: 12),
