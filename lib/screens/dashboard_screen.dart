@@ -209,8 +209,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               future: Supabase.instance.client
                   .from('tasks')
                   .select(
-                      'app_name, title, user_payout_ngn, task_type, slots_left, is_active, created_at')
+                      'app_name, title, user_payout_ngn, task_type, slots_left, is_active, created_at, priority_level')
                   .eq('is_active', true)
+                  .order('priority_level', ascending: false)
                   .order('created_at', ascending: false),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -263,6 +264,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     final payout = task['user_payout_ngn'];
                     final taskType = task['task_type'] as String? ?? '';
                     final slotsLeft = task['slots_left'] as int?;
+                    final priority = task['priority_level'] as int? ?? 0;
+                    final isHighPriority = priority >= 8;
                     final noSlots = slotsLeft != null && slotsLeft <= 0;
 
                     return Opacity(
@@ -272,30 +275,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         color: const Color(0xFF1E293B),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
-                          side: BorderSide.none,
+                          side: isHighPriority
+                              ? const BorderSide(
+                                  color: Color(0xFFFBBF24), width: 1)
+                              : BorderSide.none,
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
-                              const CircleAvatar(
-                                backgroundColor: Color(0xFF334155),
-                                child: Icon(Icons.bolt,
-                                    color: Color(0xFF4ADE80)),
+                              CircleAvatar(
+                                backgroundColor: const Color(0xFF334155),
+                                child: Icon(
+                                  Icons.bolt,
+                                  color: isHighPriority
+                                      ? const Color(0xFFFBBF24)
+                                      : const Color(0xFF4ADE80),
+                                ),
                               ),
                               const SizedBox(width: 14),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    if (appName.isNotEmpty)
-                                      Text(
-                                        appName,
-                                        style: const TextStyle(
-                                          color: Colors.white54,
-                                          fontSize: 11,
-                                        ),
-                                      ),
+                                    Row(
+                                      children: [
+                                        if (appName.isNotEmpty)
+                                          Text(
+                                            appName,
+                                            style: const TextStyle(
+                                              color: Colors.white54,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        if (isHighPriority) ...[
+                                          const SizedBox(width: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0x33FBBF24),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: const Text(
+                                              'HOT',
+                                              style: TextStyle(
+                                                color: Color(0xFFFBBF24),
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
                                     const SizedBox(height: 3),
                                     Text(
                                       title,

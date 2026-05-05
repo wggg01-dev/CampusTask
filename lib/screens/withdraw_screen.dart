@@ -44,20 +44,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
     setState(() => _isSubmitting = true);
     try {
       final user = Supabase.instance.client.auth.currentUser;
-      final payoutAmount = _balance - _fee;
-
-      // 1. Log the payout request
-      await Supabase.instance.client.from('payouts').insert({
-        'user_id': user!.id,
-        'amount_ngn': payoutAmount,
-        'fee_charged': _fee,
-        'status': 'pending',
-      });
-
-      // 2. Deduct from the available balance
-      await Supabase.instance.client
-          .from('profiles')
-          .update({'available_balance_ngn': 0}).eq('id', user.id);
+      final payoutAmount = _balance - _fee;,List
 
       if (mounted) {
         _showSuccessDialog(payoutAmount);
