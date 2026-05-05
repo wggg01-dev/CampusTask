@@ -1,0 +1,12 @@
+{
+  "name": "Flutter",
+  "image": "ghcr.io/cirruslabs/flutter:stable",
+  "features": {
+    "ghcr.io/devcontainers/features/sshd:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["dart-code.flutter"]
+    }
+  }
+}
