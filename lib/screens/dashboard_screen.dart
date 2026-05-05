@@ -159,30 +159,74 @@ class DashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // TASK LIST (Placeholder)
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: 3,
-              itemBuilder: (context, index) {
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  color: const Color(0xFF1E293B),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: ListTile(
-                    leading: const CircleAvatar(
-                      backgroundColor: Color(0xFF334155),
-                      child: Icon(Icons.bolt, color: Colors.amber),
+            FutureBuilder<List<Map<String, dynamic>>>(
+              future: Supabase.instance.client.from('tasks').select(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text(
+                      'Could not load tasks.',
+                      style: TextStyle(color: Colors.white38),
                     ),
-                    title: const Text('Complete Survey #1'),
-                    subtitle: const Text('Earn approx. ₦850'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      // TODO: Open Offerwall
-                    },
-                  ),
+                  );
+                }
+
+                final tasks = snapshot.data ?? [];
+
+                if (tasks.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text(
+                      'No tasks available right now. Check back soon!',
+                      style: TextStyle(color: Colors.white38),
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: tasks.length,
+                  itemBuilder: (context, index) {
+                    final task = tasks[index];
+                    final title = task['title'] as String? ?? 'Task';
+                    final platform = task['platform'] as String? ?? '';
+                    final reward = task['reward_ngn'];
+                    final rewardText = reward != null
+                        ? '₦${reward.toString()} reward'
+                        : 'Tap to view';
+
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      color: const Color(0xFF1E293B),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: ListTile(
+                        leading: const CircleAvatar(
+                          backgroundColor: Color(0xFF334155),
+                          child: Icon(Icons.bolt, color: Color(0xFFFBBF24)),
+                        ),
+                        title: Text(title),
+                        subtitle: Text(
+                          platform.isNotEmpty
+                              ? '$platform · $rewardText'
+                              : rewardText,
+                          style: const TextStyle(
+                              color: Color(0xFF4ADE80), fontSize: 12),
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () {
+                          // TODO: open task URL or offerwall
+                        },
+                      ),
+                    );
+                  },
                 );
               },
             ),
