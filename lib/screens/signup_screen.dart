@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SignupScreen extends StatefulWidget {
-  const SignupScreen({super.key});
+  final String? initialReferralCode;
+  const SignupScreen({super.key, this.initialReferralCode});
 
   @override
   State<SignupScreen> createState() => _SignupScreenState();
@@ -14,6 +15,14 @@ class _SignupScreenState extends State<SignupScreen> {
   final _passwordController = TextEditingController();
   final _friendCodeController = TextEditingController();
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialReferralCode != null) {
+      _friendCodeController.text = widget.initialReferralCode!;
+    }
+  }
 
   String _generateRefCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

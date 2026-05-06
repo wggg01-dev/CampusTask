@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'bank_setup_screen.dart';
 import 'payout_history_screen.dart';
@@ -82,8 +84,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 final data = snapshot.data?.first;
                 final available = data?['available_balance_ngn'] ?? 0;
                 final pending = data?['pending_balance_ngn'] ?? 0;
+                final refCode = data?['ref_code'] as String?;
 
-                return Container(
+                return Column(
+                  children: [
+                Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -161,6 +166,109 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ],
                   ),
+                ),
+
+                // REFER & EARN CARD
+                if (refCode != null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E293B),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0x3310B981)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.card_giftcard_outlined,
+                                color: Color(0xFF10B981), size: 18),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Refer & Earn',
+                              style: TextStyle(
+                                color: Color(0xFF10B981),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Share your code and earn a bonus for every friend who joins.',
+                          style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF0F172A),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  refCode,
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 4,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              tooltip: 'Copy code',
+                              onPressed: () {
+                                Clipboard.setData(ClipboardData(text: refCode));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Referral code copied!')),
+                                );
+                              },
+                              icon: const Icon(Icons.copy, color: Colors.white54, size: 20),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Share.share(
+                                'Join me on CampusTask and start earning! Use my referral code $refCode to sign up: https://campustask.app/signup?ref=$refCode',
+                                subject: 'Earn money with CampusTask',
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF10B981),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            icon: const Icon(Icons.share, color: Colors.white, size: 18),
+                            label: const Text(
+                              'Share Invite Link',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                  ],
                 );
               },
             ),

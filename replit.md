@@ -39,6 +39,8 @@ pubspec.yaml                 # Dependencies
 
 - `supabase_flutter: ^2.3.0` — Auth + real-time database
 - `google_fonts: ^6.2.1` — Plus Jakarta Sans typography
+- `share_plus: ^10.0.0` — Native share sheet for referral links
+- `app_links: ^6.0.0` — Deep link handling (referral URL → signup pre-fill)
 
 ## Auth Flow
 
@@ -46,14 +48,10 @@ pubspec.yaml                 # Dependencies
 - Session exists → `DashboardScreen`
 - No session → `LoginScreen`
 
-## Environment Variables
+Deep links (`campustask.app/signup?ref=CODE`) are handled in `main.dart` via `app_links` and push to `SignupScreen` with the code pre-filled.
 
-Set these before running (via `--dart-define` or your environment):
-- `SUPABASE_URL` — Your Supabase project URL
-- `SUPABASE_ANON_KEY` — Your Supabase anonymous key
+## Referral System
 
-## Planned Features
-
-- Real-time balance from Supabase
-- Offerwall / task integration
-- Withdrawal flow
+- Referrer reward logic lives in a Supabase Edge Function (backend-only, tamper-proof)
+- New user bonus on first spin is handled in the database
+- Frontend: dashboard shows ref code + share button; signup screen accepts `initialReferralCode` param

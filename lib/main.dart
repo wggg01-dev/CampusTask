@@ -1,9 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:app_links/app_links.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/rules_screen.dart';
+import 'screens/signup_screen.dart';
+
+final _navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,12 +21,55 @@ Future<void> main() async {
   runApp(const CampusTaskApp());
 }
 
-class CampusTaskApp extends StatelessWidget {
+class CampusTaskApp extends StatefulWidget {
   const CampusTaskApp({super.key});
+
+  @override
+  State<CampusTaskApp> createState() => _CampusTaskAppState();
+}
+
+class _CampusTaskAppState extends State<CampusTaskApp> {
+  late final AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _initDeepLinks();
+  }
+
+  Future<void> _initDeepLinks() async {
+    _appLinks = AppLinks();
+
+    // Handle link that cold-started the app
+    final initialUri = await _appLinks.getInitialLink();
+    if (initialUri != null) _handleUri(initialUri);
+
+    // Handle links while the app is already running
+    _linkSub = _appLinks.uriLinkStream.listen(_handleUri);
+  }
+
+  void _handleUri(Uri uri) {
+    final ref = uri.queryParameters['ref'];
+    if (ref != null && ref.isNotEmpty) {
+      _navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (_) => SignupScreen(initialReferralCode: ref.toUpperCase()),
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _linkSub?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'CampusTask',
       theme: ThemeData(
