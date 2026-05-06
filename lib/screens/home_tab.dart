@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'payout_history_screen.dart';
 import 'profile_screen.dart';
 import 'spin_wheel_screen.dart';
 import 'withdraw_screen.dart';
-import 'payout_history_screen.dart';
 
 class HomeTab extends StatelessWidget {
   final void Function(int) onNavigate;
@@ -26,9 +26,7 @@ class HomeTab extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.casino_outlined, color: Color(0xFF10B981)),
             tooltip: 'Daily Spin',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SpinWheelScreen()),
-            ),
+            onPressed: () => showSpinWheelModal(context),
           ),
           IconButton(
             icon: const Icon(Icons.person_outline),

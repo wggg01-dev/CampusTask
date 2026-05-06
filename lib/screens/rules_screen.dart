@@ -50,33 +50,28 @@ class _RulesScreenState extends State<RulesScreen> {
   static const List<_HowToStep> _steps = [
     _HowToStep(
       number: '1',
-      title: 'Pick a Task',
-      body: 'Go to the Tasks tab and choose any active task. Look for HOT tasks — they pay more and clear faster.',
+      title: 'Complete Task',
+      body: 'Go to the Tasks tab, pick any active task, and complete it exactly as described. HOT tasks pay more.',
     ),
     _HowToStep(
       number: '2',
-      title: 'Do the Work on the Platform',
-      body: "Tap "Open [App]" and complete the task exactly as described — install the app, fill the survey, or follow the steps shown.",
+      title: 'Wait for Review',
+      body: 'Your earnings land in Pending Balance while we verify your submission directly with the platform. This takes up to 7 days.',
     ),
     _HowToStep(
       number: '3',
-      title: 'Submit Your Proof',
-      body: 'Take a clear screenshot showing you completed the task. Tap "Submit Proof" and upload it via the form.',
+      title: 'Get Paid Instantly',
+      body: 'Once verified, your money moves straight to your Available Balance — no delays, no extra steps.',
     ),
     _HowToStep(
       number: '4',
-      title: 'Wait for Clearance (7 Days)',
-      body: "Your earnings appear as Pending Balance first. We verify with the platform directly. After 7 days, the money moves to your Available Balance.",
+      title: 'Withdraw to Your Bank',
+      body: 'Hit ₦2,000 and tap Withdraw on the Home screen. Make sure your bank details are saved in your Profile first.',
     ),
     _HowToStep(
       number: '5',
-      title: 'Withdraw to Your Bank',
-      body: 'Once your Available Balance hits ₦2,000, go to Home and tap Withdraw. Set up your bank account in Profile first.',
-    ),
-    _HowToStep(
-      number: '6',
-      title: 'Invite Friends, Earn More',
-      body: 'Share your referral code from the Leaderboard tab. When a friend you invited completes 2+ high-priority tasks, you automatically earn ₦500.',
+      title: 'Invite Friends to Earn More',
+      body: 'Share your referral code from the Leaderboard tab. Every friend who completes 2+ high-priority tasks earns you ₦500 automatically.',
     ),
   ];
 

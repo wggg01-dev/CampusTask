@@ -286,85 +286,40 @@ class _TasksScreenState extends State<TasksScreen> {
                                 ],
                               ),
 
-                              // ACTION BUTTONS
-                              if (!noSlots &&
-                                  (taskUrl != null || formUrl != null)) ...[
+                              // COMPLETE BUTTON
+                              if (!noSlots) ...[
                                 const SizedBox(height: 14),
                                 const Divider(color: Colors.white10, height: 1),
                                 const SizedBox(height: 14),
-                                Row(
-                                  children: [
-                                    if (taskUrl != null)
-                                      Expanded(
-                                        child: ElevatedButton.icon(
-                                          onPressed: () {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              SnackBar(
-                                                  content: Text(
-                                                      'Opening $appName...')),
-                                            );
-                                          },
-                                          icon: const Icon(
-                                              Icons.open_in_new_rounded,
-                                              size: 16,
-                                              color: Colors.white),
-                                          label: Text(
-                                            appName.isNotEmpty
-                                                ? 'Open $appName'
-                                                : 'Start Task',
-                                            style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.bold),
-                                          ),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor:
-                                                const Color(0xFF10B981),
-                                            padding: const EdgeInsets.symmetric(
-                                                vertical: 11),
-                                            shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12)),
-                                          ),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                              'Starting task: $title'),
+                                          behavior: SnackBarBehavior.floating,
                                         ),
-                                      ),
-                                    if (taskUrl != null && formUrl != null)
-                                      const SizedBox(width: 8),
-                                    if (formUrl != null)
-                                      Expanded(
-                                        child: OutlinedButton.icon(
-                                          onPressed: () {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              const SnackBar(
-                                                  content: Text(
-                                                      'Opening submission form...')),
-                                            );
-                                          },
-                                          icon: const Icon(
-                                              Icons.assignment_outlined,
-                                              size: 16,
-                                              color: Colors.white70),
-                                          label: const Text(
-                                            'Submit Proof',
-                                            style: TextStyle(
-                                                color: Colors.white70,
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.bold),
-                                          ),
-                                          style: OutlinedButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(
-                                                vertical: 11),
-                                            side: const BorderSide(
-                                                color: Colors.white24),
-                                            shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12)),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF10B981),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 13),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12)),
+                                    ),
+                                    child: const Text(
+                                      'Complete',
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ],
