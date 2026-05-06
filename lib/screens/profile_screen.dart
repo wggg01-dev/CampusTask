@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -16,8 +15,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _locationController = TextEditingController();
   String? _selectedGender;
   String? _phone;
-  String? _refCode;
-  int _referralCount = 0;
   bool _isSaving = false;
   bool _isLoading = true;
 
@@ -35,22 +32,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final profile = await Supabase.instance.client
           .from('profiles')
-          .select('full_name, age, gender, phone, location, ref_code')
+          .select('full_name, age, gender, phone, location')
           .eq('id', user.id)
           .single();
-
-      final referred = await Supabase.instance.client
-          .from('profiles')
-          .select('id')
-          .eq('referred_by', user.id);
 
       _nameController.text = profile['full_name'] as String? ?? '';
       _ageController.text = profile['age']?.toString() ?? '';
       _locationController.text = profile['location'] as String? ?? '';
       _selectedGender = profile['gender'] as String?;
       _phone = profile['phone'] as String?;
-      _refCode = profile['ref_code'] as String?;
-      _referralCount = (referred as List).length;
     } catch (_) {}
 
     if (mounted) setState(() => _isLoading = false);
@@ -143,6 +133,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _deleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Delete Account',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text(
+          'This will permanently delete your account and all your data. This cannot be undone.',
+          style: TextStyle(color: Colors.white60, height: 1.6),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel',
+                style: TextStyle(color: Colors.white38)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      // Placeholder — wire to a Supabase edge function or admin API
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Account deletion request sent. You will be contacted shortly.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  void _contactSupport() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Opening support…'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    // TODO: launch support URL or open in-app chat
+  }
+
   InputDecoration _inputDeco(String label, {String? hint}) => InputDecoration(
         labelText: label,
         hintText: hint,
@@ -178,14 +222,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         elevation: 0,
         title: const Text('Profile',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-            tooltip: 'Log Out',
-            onPressed: _signOut,
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -194,13 +230,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── AVATAR + PHONE ─────────────────────────────────────
+                  // ── AVATAR + PHONE ────────────────────────────────────
                   Center(
                     child: Column(
                       children: [
                         Container(
-                          width: 80,
-                          height: 80,
+                          width: 76,
+                          height: 76,
                           decoration: BoxDecoration(
                             color: const Color(0xFF10B981).withOpacity(0.15),
                             shape: BoxShape.circle,
@@ -213,165 +249,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ? _nameController.text[0].toUpperCase()
                                   : '?',
                               style: const TextStyle(
-                                  fontSize: 32,
+                                  fontSize: 30,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF10B981)),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        if (_phone != null)
+                        const SizedBox(height: 10),
+                        Text(
+                          _nameController.text.isNotEmpty
+                              ? _nameController.text
+                              : '—',
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                        if (_phone != null) ...[
+                          const SizedBox(height: 4),
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const Icon(Icons.chat_bubble_outline_rounded,
-                                  color: Color(0xFF25D366), size: 15),
-                              const SizedBox(width: 6),
+                                  color: Color(0xFF25D366), size: 13),
+                              const SizedBox(width: 5),
                               Text(_phone!,
                                   style: const TextStyle(
-                                      color: Colors.white60, fontSize: 14)),
+                                      color: Colors.white38, fontSize: 13)),
                             ],
                           ),
+                        ],
                       ],
                     ),
                   ),
 
-                  const SizedBox(height: 28),
-
-                  // ── REFERRAL STATS ─────────────────────────────────────
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _statCard(
-                          icon: Icons.people_outline,
-                          iconColor: const Color(0xFF10B981),
-                          value: '$_referralCount',
-                          label: 'Friends Referred',
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: _statCard(
-                          icon: Icons.savings_outlined,
-                          iconColor: const Color(0xFFFB923C),
-                          value: '₦${(_referralCount * 500).toString()}',
-                          label: 'Referral Earnings',
-                          valueColor: const Color(0xFFFB923C),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // REFERRAL CODE + SHARE
-                  if (_refCode != null) ...[
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1E293B),
-                        borderRadius: BorderRadius.circular(18),
-                        border:
-                            Border.all(color: const Color(0x3310B981)),
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            _refCode!,
-                            style: const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 8,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: () {
-                                    Clipboard.setData(
-                                        ClipboardData(text: _refCode!));
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(const SnackBar(
-                                            content: Text(
-                                                'Referral code copied!')));
-                                  },
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.white70,
-                                    side: const BorderSide(
-                                        color: Colors.white24),
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(12)),
-                                  ),
-                                  icon: const Icon(Icons.copy, size: 16),
-                                  label: const Text('Copy'),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    Share.share(
-                                      'Join me on CampusTask and start earning! Use my referral code $_refCode to sign up: https://campustask.app/signup?ref=$_refCode',
-                                      subject: 'Earn money with CampusTask',
-                                    );
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        const Color(0xFF10B981),
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(12)),
-                                  ),
-                                  icon: const Icon(Icons.share,
-                                      color: Colors.white, size: 16),
-                                  label: const Text('Share',
-                                      style:
-                                          TextStyle(color: Colors.white)),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-
                   const SizedBox(height: 32),
 
-                  // ── EDITABLE DETAILS ───────────────────────────────────
-                  const Text(
-                    'Personal Details',
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF10B981)),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Changes here update your task submission data.',
-                    style: TextStyle(color: Colors.white38, fontSize: 12),
-                  ),
-                  const SizedBox(height: 16),
+                  // ── PERSONAL DETAILS ──────────────────────────────────
+                  _sectionLabel('Personal Details',
+                      'Changes here update your task submission data.'),
+                  const SizedBox(height: 14),
 
-                  // FULL NAME
                   TextFormField(
                     controller: _nameController,
                     textCapitalization: TextCapitalization.words,
                     decoration: _inputDeco('Full Name'),
                     onChanged: (_) => setState(() {}),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
 
-                  // AGE + GENDER
                   Row(
                     children: [
                       Expanded(
@@ -403,14 +327,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   horizontal: 16, vertical: 14),
                             ),
                             hint: const Text('Gender',
-                                style:
-                                    TextStyle(color: Colors.white38)),
+                                style: TextStyle(color: Colors.white38)),
                             items: _genders
                                 .map((g) => DropdownMenuItem(
                                       value: g,
                                       child: Text(g,
-                                          style: const TextStyle(
-                                              fontSize: 13)),
+                                          style: const TextStyle(fontSize: 13)),
                                     ))
                                 .toList(),
                             onChanged: (v) =>
@@ -420,18 +342,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
 
-                  // LOCATION
                   TextFormField(
                     controller: _locationController,
                     textCapitalization: TextCapitalization.words,
-                    decoration: _inputDeco('Location',
-                        hint: 'e.g. Lagos, Nigeria'),
+                    decoration:
+                        _inputDeco('Location', hint: 'e.g. Lagos, Nigeria'),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
 
-                  // PHONE — read-only
+                  // PHONE — read-only row
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 14),
@@ -450,15 +371,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             children: [
                               const Text('WhatsApp Number',
                                   style: TextStyle(
-                                      color: Colors.white54,
-                                      fontSize: 11)),
+                                      color: Colors.white38, fontSize: 11)),
                               const SizedBox(height: 2),
-                              Text(
-                                _phone ?? '—',
-                                style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500),
-                              ),
+                              Text(_phone ?? '—',
+                                  style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500)),
                             ],
                           ),
                         ),
@@ -472,12 +390,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: EdgeInsets.only(left: 4),
                     child: Text(
                       'Phone number cannot be changed after verification.',
-                      style: TextStyle(
-                          color: Colors.white24, fontSize: 11),
+                      style: TextStyle(color: Colors.white24, fontSize: 11),
                     ),
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 20),
 
                   // SAVE BUTTON
                   SizedBox(
@@ -487,8 +404,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF10B981),
                         disabledBackgroundColor: const Color(0x4010B981),
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14)),
                       ),
@@ -497,39 +413,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white),
+                                  strokeWidth: 2, color: Colors.white),
                             )
                           : const Text(
                               'Save Changes',
                               style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                  fontSize: 15,
                                   color: Colors.white),
                             ),
                     ),
                   ),
 
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 36),
 
-                  // LOG OUT
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: _signOut,
-                      icon: const Icon(Icons.logout_rounded,
-                          size: 18, color: Colors.redAccent),
-                      label: const Text('Log Out',
-                          style: TextStyle(color: Colors.redAccent)),
-                      style: OutlinedButton.styleFrom(
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 14),
-                        side: const BorderSide(
-                            color: Colors.redAccent, width: 1),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                      ),
-                    ),
+                  // ── ACCOUNT SETTINGS ──────────────────────────────────
+                  _sectionLabel('Account Settings', null),
+                  const SizedBox(height: 12),
+
+                  _settingsTile(
+                    icon: Icons.headset_mic_outlined,
+                    iconColor: const Color(0xFF60A5FA),
+                    label: 'Contact Support',
+                    onTap: _contactSupport,
+                  ),
+                  const SizedBox(height: 10),
+                  _settingsTile(
+                    icon: Icons.logout_rounded,
+                    iconColor: Colors.white54,
+                    label: 'Log Out',
+                    onTap: _signOut,
+                  ),
+                  const SizedBox(height: 10),
+                  _settingsTile(
+                    icon: Icons.delete_outline_rounded,
+                    iconColor: Colors.redAccent,
+                    label: 'Delete Account',
+                    labelColor: Colors.redAccent,
+                    onTap: _deleteAccount,
                   ),
                 ],
               ),
@@ -537,38 +458,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _statCard({
-    required IconData icon,
-    required Color iconColor,
-    required String value,
-    required String label,
-    Color? valueColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Column(
+  Widget _sectionLabel(String title, String? subtitle) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: iconColor, size: 22),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: valueColor ?? Colors.white,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(label,
-              style:
-                  const TextStyle(color: Colors.white54, fontSize: 12)),
+          Text(title,
+              style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white54)),
+          if (subtitle != null) ...[
+            const SizedBox(height: 3),
+            Text(subtitle,
+                style:
+                    const TextStyle(color: Colors.white24, fontSize: 11)),
+          ],
         ],
+      );
+
+  Widget _settingsTile({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    Color? labelColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E293B),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: iconColor, size: 20),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: labelColor ?? Colors.white,
+                ),
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                color: Colors.white24, size: 20),
+          ],
+        ),
       ),
     );
   }
