@@ -13,27 +13,32 @@ A Flutter + Supabase fintech app that lets students earn money by completing tas
 
 ```
 lib/
-  main.dart                  # App entry point, ThemeData, CampusTaskApp, AuthGate
+  main.dart                     # App entry point, ThemeData, CampusTaskApp, AuthGate → MainScreen
   screens/
-    login_screen.dart        # Email/password login via Supabase
-    dashboard_screen.dart    # Balance card + task list
+    main_screen.dart            # Bottom nav shell: Home (0) · Tasks (1) · Leaderboard (2)
+    home_tab.dart               # Balance card + ₦2000 progress bar + Withdraw + Invite + Quick Tasks preview
+    tasks_screen.dart           # Full task list with search, task cards, Open/Submit Proof buttons
+    leaderboard_screen.dart     # Referral code + stats + copy/share + Top 10 rankings
+    rules_screen.dart           # One-time rules gate + How It Works (6-step How-To)
+    login_screen.dart           # Email/password login via Supabase
+    signup_screen.dart          # Registration + optional referral code pre-fill
     bank_setup_screen.dart      # Payout settings — bank name, code, account number → profiles table
     payout_history_screen.dart  # Real-time withdrawal history streamed from payouts table
     spin_wheel_screen.dart      # Daily spin wheel with animated CustomPainter wheel + Supabase reward crediting
-    signup_screen.dart          # Registration with email, password, optional referral code + profile creation
-    rules_screen.dart           # One-time rules acceptance gate shown before dashboard on first login
     withdraw_screen.dart        # Withdrawal screen with ₦2000 minimum check and ₦50 fee deduction
-pubspec.yaml                 # Dependencies
+    profile_screen.dart         # User profile, bank setup access, logout
+pubspec.yaml                    # Dependencies
 ```
 
 ## Supabase Tables
 
-- `profiles` — stores user profile + bank details
-  - `id` (FK → auth.users), `bank_account_number`, `bank_code`, `bank_name`
-  - `available_balance_ngn` — cleared funds ready to withdraw
-  - `pending_balance_ngn` — funds in 7-day hold period
+- `profiles` — user profile + bank details + referral data
+  - `id`, `bank_account_number`, `bank_code`, `bank_name`, `ref_code`
+  - `available_balance_ngn`, `pending_balance_ngn`
+  - `has_accepted_rules`, `rules_accepted_at`
 - `payouts` — withdrawal records (real-time stream)
-  - `id`, `user_id` (FK → auth.users), `amount_ngn`, `status` (sent | pending), `created_at`
+- `tasks` — active tasks (`is_active`, `priority_level`, `slots_left`, `task_url`, `form_url`)
+- `referral_stats` — SQL view: `id`, `referral_count`, `referral_earnings_ngn` (used by leaderboard)
 
 ## Key Dependencies
 
@@ -44,14 +49,35 @@ pubspec.yaml                 # Dependencies
 
 ## Auth Flow
 
-`AuthGate` listens to Supabase's `onAuthStateChange` stream:
-- Session exists → `DashboardScreen`
+`AuthGate` → `_RulesGate` (checks `has_accepted_rules`):
+- Rules not accepted → `RulesScreen` (on accept → pushReplacement to `MainScreen`)
+- Rules accepted → `MainScreen` (bottom nav shell)
 - No session → `LoginScreen`
 
-Deep links (`campustask.app/signup?ref=CODE`) are handled in `main.dart` via `app_links` and push to `SignupScreen` with the code pre-filled.
+Deep links (`campustask.app/signup?ref=CODE`) handled in `main.dart` via `app_links`.
 
-## Referral System
+## Architecture decisions
 
-- Referrer reward logic lives in a Supabase Edge Function (backend-only, tamper-proof)
-- New user bonus on first spin is handled in the database
-- Frontend: dashboard shows ref code + share button; signup screen accepts `initialReferralCode` param
+- **IndexedStack** in MainScreen preserves tab state across navigation
+- **HomeTab** takes `onNavigate(int)` callback so Quick Tasks "See All" and Invite banner can switch tabs without re-mounting
+- Referral block removed from Home — lives exclusively on Leaderboard for contextual growth hook
+- Tasks have `task_url` + `form_url` columns — "Open App" and "Submit Proof" buttons shown only when non-null
+- `referral_stats` is a Supabase view queried for both user's own stats and the top-10 leaderboard
+
+## Product
+
+- Home: live balance, ₦2,000 withdrawal progress bar, Withdraw + History, Invite banner, Quick Tasks preview
+- Tasks: searchable full task list with HOT badge, payout, slots, and action buttons
+- Leaderboard: referral code copy/share, personal referral stats, top 10 earners with gold/silver/bronze medals
+- Rules: rules gate with How It Works 6-step guide (shown once on first login)
+
+## User preferences
+
+- No clutter — each screen has one clear purpose
+- Referral logic lives on Leaderboard, not Dashboard
+- ₦2,000 progress bar on home balance card
+
+## Gotchas
+
+- `referral_count` and `referral_earnings_ngn` read from `profiles` stream in LeaderboardScreen — ensure these columns exist on profiles OR refactor to query `referral_stats` filtered by user id
+- `dashboard_screen.dart` still exists but is no longer used — safe to delete

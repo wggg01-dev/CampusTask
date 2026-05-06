@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dashboard_screen.dart';
+import 'main_screen.dart';
 
 class RulesScreen extends StatefulWidget {
   const RulesScreen({super.key});
@@ -47,6 +47,39 @@ class _RulesScreenState extends State<RulesScreen> {
     ),
   ];
 
+  static const List<_HowToStep> _steps = [
+    _HowToStep(
+      number: '1',
+      title: 'Pick a Task',
+      body: 'Go to the Tasks tab and choose any active task. Look for HOT tasks — they pay more and clear faster.',
+    ),
+    _HowToStep(
+      number: '2',
+      title: 'Do the Work on the Platform',
+      body: "Tap "Open [App]" and complete the task exactly as described — install the app, fill the survey, or follow the steps shown.",
+    ),
+    _HowToStep(
+      number: '3',
+      title: 'Submit Your Proof',
+      body: 'Take a clear screenshot showing you completed the task. Tap "Submit Proof" and upload it via the form.',
+    ),
+    _HowToStep(
+      number: '4',
+      title: 'Wait for Clearance (7 Days)',
+      body: "Your earnings appear as Pending Balance first. We verify with the platform directly. After 7 days, the money moves to your Available Balance.",
+    ),
+    _HowToStep(
+      number: '5',
+      title: 'Withdraw to Your Bank',
+      body: 'Once your Available Balance hits ₦2,000, go to Home and tap Withdraw. Set up your bank account in Profile first.',
+    ),
+    _HowToStep(
+      number: '6',
+      title: 'Invite Friends, Earn More',
+      body: 'Share your referral code from the Leaderboard tab. When a friend you invited completes 2+ high-priority tasks, you automatically earn ₦500.',
+    ),
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -73,7 +106,7 @@ class _RulesScreenState extends State<RulesScreen> {
 
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          MaterialPageRoute(builder: (_) => const MainScreen()),
         );
       }
     } catch (e) {
@@ -147,7 +180,7 @@ class _RulesScreenState extends State<RulesScreen> {
                         color: Color(0xFF10B981), size: 16),
                     SizedBox(width: 4),
                     Text(
-                      'Scroll to read all rules',
+                      'Scroll to read everything',
                       style: TextStyle(
                           color: Color(0xFF10B981),
                           fontSize: 12,
@@ -159,19 +192,68 @@ class _RulesScreenState extends State<RulesScreen> {
 
             const SizedBox(height: 12),
 
-            // RULES LIST
+            // SCROLLABLE CONTENT
             Expanded(
-              child: ListView.separated(
+              child: ListView(
                 controller: _scrollController,
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                itemCount: _rules.length + 1,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  if (index == _rules.length) {
-                    return const _WarningBanner();
-                  }
-                  return _RuleTile(rule: _rules[index]);
-                },
+                children: [
+                  // ── RULES ──────────────────────────────────────────────
+                  ...List.generate(_rules.length, (i) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _RuleTile(rule: _rules[i]),
+                    );
+                  }),
+
+                  const _WarningBanner(),
+
+                  const SizedBox(height: 28),
+
+                  // ── HOW IT WORKS ───────────────────────────────────────
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E293B),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: const Color(0x2210B981)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.lightbulb_outline,
+                                color: Color(0xFFFBBF24), size: 18),
+                            SizedBox(width: 8),
+                            Text(
+                              'How It Works',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Six steps from sign-up to your first withdrawal.',
+                          style:
+                              TextStyle(color: Colors.white38, fontSize: 12),
+                        ),
+                        const SizedBox(height: 18),
+                        ...List.generate(_steps.length, (i) {
+                          final step = _steps[i];
+                          final isLast = i == _steps.length - 1;
+                          return _HowToStepTile(step: step, isLast: isLast);
+                        }),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+                ],
               ),
             ),
 
@@ -204,7 +286,7 @@ class _RulesScreenState extends State<RulesScreen> {
                       : Text(
                           _hasScrolledToBottom
                               ? 'I Understand — Let Me Earn'
-                              : 'Read All Rules to Continue',
+                              : 'Read Everything to Continue',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
@@ -314,6 +396,92 @@ class _WarningBanner extends StatelessWidget {
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
                 height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── How-To step ──────────────────────────────────────────────────────────────
+
+class _HowToStep {
+  final String number;
+  final String title;
+  final String body;
+  const _HowToStep(
+      {required this.number, required this.title, required this.body});
+}
+
+class _HowToStepTile extends StatelessWidget {
+  final _HowToStep step;
+  final bool isLast;
+  const _HowToStepTile({required this.step, this.isLast = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // STEP NUMBER + CONNECTOR LINE
+          Column(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: const BoxDecoration(
+                  color: Color(0x2210B981),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  step.number,
+                  style: const TextStyle(
+                    color: Color(0xFF10B981),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    width: 1,
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    color: Colors.white10,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 14),
+          // CONTENT
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    step.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    step.body,
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 13,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

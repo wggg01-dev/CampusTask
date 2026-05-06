@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app_links/app_links.dart';
-import 'screens/dashboard_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/main_screen.dart';
 import 'screens/rules_screen.dart';
 import 'screens/signup_screen.dart';
 
@@ -131,7 +131,7 @@ class _RulesGate extends StatelessWidget {
         }
         final hasAccepted = snapshot.data?['has_accepted_rules'] == true;
         if (hasAccepted) {
-          return const DashboardScreen();
+          return const MainScreen();
         }
         return const RulesScreen();
       },
