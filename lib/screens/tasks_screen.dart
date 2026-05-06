@@ -69,36 +69,45 @@ class _TasksScreenState extends State<TasksScreen> {
     final taskUrl = task['task_url'] as String?;
 
     if (taskUrl != null && taskUrl.trim().isNotEmpty) {
-      // ── Workflow 1: Mark submitted, then navigate to URL ─────────
-      final user = Supabase.instance.client.auth.currentUser!;
+      // ── Workflow 1: Quick complete — record then launch URL ───────
+      await _handleQuickComplete(taskUrl.trim(), task['id'].toString());
+    } else {
+      // ── Workflow 2: Submit bio-data automatically ────────────────
+      await _submitBioData(task);
+    }
+  }
 
-      // 1. Record submission — alerts the tasker via the blurred preview
-      await Supabase.instance.client.from('user_tasks').upsert({
-        'user_id': user.id,
-        'task_id': task['id'],
-        'status': 'submitted',
+  Future<void> _handleQuickComplete(String taskUrl, String taskId) async {
+    final user = Supabase.instance.client.auth.currentUser;
+
+    try {
+      // 1. Instantly record the submission using their existing bio-data
+      // The DB will link the user_id to their profile automatically
+      await Supabase.instance.client.from('task_submissions').upsert({
+        'user_id': user?.id,
+        'task_id': taskId,
+        'status': 'pending',
       });
 
       // 2. Mark locally so button updates immediately
       if (mounted) {
-        setState(() => _submittedTaskIds.add(task['id'].toString()));
+        setState(() => _submittedTaskIds.add(taskId));
       }
 
-      // 3. Take them to the destination
-      final uri = Uri.tryParse(taskUrl.trim());
-      if (uri == null) return;
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Could not open task link.')),
-          );
-        }
+      // 3. Launch the external link immediately
+      final Uri url = Uri.parse(taskUrl);
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
       }
-    } else {
-      // ── Workflow 2: Submit bio-data automatically ────────────────
-      await _submitBioData(task);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Submission failed: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
