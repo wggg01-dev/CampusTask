@@ -198,9 +198,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        const Text(
-                          'Share your code and earn a bonus for every friend who joins.',
-                          style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
+                        RichText(
+                          text: const TextSpan(
+                            style: TextStyle(
+                                color: Colors.white54, fontSize: 12, height: 1.5),
+                            children: [
+                              TextSpan(text: 'Invite a friend and earn '),
+                              TextSpan(
+                                text: '₦500',
+                                style: TextStyle(
+                                  color: Color(0xFFFB923C),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              TextSpan(
+                                  text:
+                                      ' for every friend who signs up using your code.'),
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 14),
                         Row(
