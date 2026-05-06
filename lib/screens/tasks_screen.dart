@@ -51,7 +51,17 @@ class _TasksScreenState extends State<TasksScreen> {
     final taskUrl = task['task_url'] as String?;
 
     if (taskUrl != null && taskUrl.trim().isNotEmpty) {
-      // ── Workflow 1: Navigate to URL ──────────────────────────────
+      // ── Workflow 1: Mark submitted, then navigate to URL ─────────
+      final user = Supabase.instance.client.auth.currentUser!;
+
+      // 1. Record submission — alerts the tasker via the blurred preview
+      await Supabase.instance.client.from('user_tasks').upsert({
+        'user_id': user.id,
+        'task_id': task['id'],
+        'status': 'submitted',
+      });
+
+      // 2. Take them to the destination
       final uri = Uri.tryParse(taskUrl.trim());
       if (uri == null) return;
       if (await canLaunchUrl(uri)) {
