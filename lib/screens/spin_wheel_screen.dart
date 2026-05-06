@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -32,6 +33,9 @@ class _SpinWheelModalState extends State<_SpinWheelModal>
   bool _alreadySpunToday = false;
   double _currentAngle = 0;
 
+  Timer? _countdownTimer;
+  Duration _timeRemaining = Duration.zero;
+
   final List<_WheelSegment> _segments = const [
     _WheelSegment(label: 'Try Again', color: Color(0xFF334155)),
     _WheelSegment(label: '₦20', color: Color(0xFF10B981)),
@@ -50,7 +54,35 @@ class _SpinWheelModalState extends State<_SpinWheelModal>
       vsync: this,
       duration: const Duration(seconds: 4),
     );
+    _timeRemaining = _calcTimeUntilMidnight();
   }
+
+  // ── Countdown helpers ─────────────────────────────────────────────────────
+
+  Duration _calcTimeUntilMidnight() {
+    final now = DateTime.now();
+    final midnight = DateTime(now.year, now.month, now.day + 1);
+    return midnight.difference(now);
+  }
+
+  void _startCountdown() {
+    _countdownTimer?.cancel();
+    _timeRemaining = _calcTimeUntilMidnight();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      final remaining = _calcTimeUntilMidnight();
+      setState(() => _timeRemaining = remaining);
+    });
+  }
+
+  String _formatDuration(Duration d) {
+    final h = d.inHours;
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '${h}h ${m}m ${s}s';
+  }
+
+  // ── Spin logic ────────────────────────────────────────────────────────────
 
   Future<void> _doSpin() async {
     if (_isSpinning || _hasSpun) return;
@@ -78,6 +110,7 @@ class _SpinWheelModalState extends State<_SpinWheelModal>
           _hasSpun = true;
           _currentAngle = targetAngle % (2 * pi);
         });
+        _startCountdown();
       }
     }
   }
@@ -99,8 +132,7 @@ class _SpinWheelModalState extends State<_SpinWheelModal>
       } else {
         _showResultDialog(
           title: 'Better luck tomorrow!',
-          body:
-              'No reward this time. You get a fresh spin every day — keep coming back!',
+          body: 'No reward this time. You get a fresh spin every day — keep coming back!',
           buttonLabel: 'Got it',
           isWin: false,
         );
@@ -108,6 +140,7 @@ class _SpinWheelModalState extends State<_SpinWheelModal>
     } catch (_) {
       if (!mounted) return;
       setState(() => _alreadySpunToday = true);
+      _startCountdown();
     }
   }
 
@@ -122,8 +155,7 @@ class _SpinWheelModalState extends State<_SpinWheelModal>
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xFF1E293B),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           title,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
@@ -147,8 +179,7 @@ class _SpinWheelModalState extends State<_SpinWheelModal>
             ],
             Text(
               body,
-              style:
-                  const TextStyle(color: Colors.white60, height: 1.5),
+              style: const TextStyle(color: Colors.white60, height: 1.5),
               textAlign: TextAlign.center,
             ),
           ],
@@ -158,9 +189,8 @@ class _SpinWheelModalState extends State<_SpinWheelModal>
             child: ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),
               style: ElevatedButton.styleFrom(
-                backgroundColor: isWin
-                    ? const Color(0xFF10B981)
-                    : const Color(0xFF334155),
+                backgroundColor:
+                    isWin ? const Color(0xFF10B981) : const Color(0xFF334155),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
@@ -175,9 +205,12 @@ class _SpinWheelModalState extends State<_SpinWheelModal>
 
   @override
   void dispose() {
+    _countdownTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -209,10 +242,7 @@ class _SpinWheelModalState extends State<_SpinWheelModal>
               const Expanded(
                 child: Text(
                   'Daily Spin',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                 ),
               ),
               IconButton(
@@ -232,7 +262,7 @@ class _SpinWheelModalState extends State<_SpinWheelModal>
             _alreadySpunToday
                 ? "You've already spun today."
                 : isLocked
-                    ? "Spin complete! Come back tomorrow."
+                    ? 'Spin complete! Come back tomorrow.'
                     : 'You have 1 free spin today. Good luck!',
             style: const TextStyle(color: Colors.white54, fontSize: 13),
           ),
@@ -294,18 +324,40 @@ class _SpinWheelModalState extends State<_SpinWheelModal>
             ),
           ),
 
+          // COUNTDOWN
           if (isLocked) ...[
-            const SizedBox(height: 14),
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.schedule, color: Colors.white24, size: 14),
-                SizedBox(width: 6),
-                Text(
-                  'Resets at midnight · Come back for more rewards',
-                  style: TextStyle(color: Colors.white24, fontSize: 12),
-                ),
-              ],
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.white10),
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    'Next spin in',
+                    style: TextStyle(color: Colors.white38, fontSize: 12),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _formatDuration(_timeRemaining),
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF10B981),
+                      letterSpacing: 2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Resets at midnight',
+                    style: TextStyle(color: Colors.white24, fontSize: 11),
+                  ),
+                ],
+              ),
             ),
           ],
         ],
