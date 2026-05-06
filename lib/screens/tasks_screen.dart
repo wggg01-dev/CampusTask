@@ -104,7 +104,7 @@ class _TasksScreenState extends State<TasksScreen> {
     try {
       // 1. Instantly record the submission using their existing bio-data
       // The DB will link the user_id to their profile automatically
-      await Supabase.instance.client.from('task_submissions').upsert({
+      await Supabase.instance.client.from('task_submissions').insert({
         'user_id': user?.id,
         'task_id': taskId,
         'device_id': deviceId,
@@ -124,12 +124,24 @@ class _TasksScreenState extends State<TasksScreen> {
     } catch (e) {
       if (mounted) {
         final errorStr = e.toString();
-        final message = errorStr.contains('unique_task_per_device')
-            ? 'This device has already completed this task.'
-            : 'Submission failed: $e';
+        final String message;
+        final Color bgColor;
+
+        if (errorStr.contains('unique_task_per_device')) {
+          message = 'This device has already completed this task.';
+          bgColor = Colors.redAccent;
+        } else if (errorStr.contains('15 pending tasks')) {
+          message = 'Limit reached! Finish your current tasks first.';
+          bgColor = Colors.orange;
+        } else {
+          message = 'Submission failed: $e';
+          bgColor = const Color(0xFF1E293B);
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
+            backgroundColor: bgColor,
             behavior: SnackBarBehavior.floating,
           ),
         );
