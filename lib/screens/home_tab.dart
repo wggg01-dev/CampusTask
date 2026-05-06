@@ -316,9 +316,9 @@ class HomeTab extends StatelessWidget {
                   future: Supabase.instance.client
                       .from('tasks')
                       .select(
-                          'app_name, title, user_payout_ngn, task_type, slots_left, priority_level')
+                          'app_name, title, user_payout_ngn, task_type, slots_left, priority_score')
                       .eq('is_active', true)
-                      .order('priority_level', ascending: false)
+                      .order('priority_score', ascending: false)
                       .order('created_at', ascending: false)
                       .limit(3),
                   builder: (context, snapshot) {
@@ -346,7 +346,7 @@ class HomeTab extends StatelessWidget {
                         final payout = task['user_payout_ngn'];
                         final taskType = task['task_type'] as String? ?? '';
                         final slotsLeft = task['slots_left'] as int?;
-                        final priority = task['priority_level'] as int? ?? 0;
+                        final priority = task['priority_score'] as int? ?? 0;
                         final isHot = priority >= 8;
                         final noSlots = slotsLeft != null && slotsLeft <= 0;
 

@@ -341,9 +341,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               future: Supabase.instance.client
                   .from('tasks')
                   .select(
-                      'app_name, title, user_payout_ngn, task_type, slots_left, is_active, created_at, priority_level')
+                      'app_name, title, user_payout_ngn, task_type, slots_left, is_active, created_at, priority_score')
                   .eq('is_active', true)
-                  .order('priority_level', ascending: false)
+                  .order('priority_score', ascending: false)
                   .order('created_at', ascending: false),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -396,7 +396,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     final payout = task['user_payout_ngn'];
                     final taskType = task['task_type'] as String? ?? '';
                     final slotsLeft = task['slots_left'] as int?;
-                    final priority = task['priority_level'] as int? ?? 0;
+                    final priority = task['priority_score'] as int? ?? 0;
                     final isHighPriority = priority >= 8;
                     final noSlots = slotsLeft != null && slotsLeft <= 0;
 
