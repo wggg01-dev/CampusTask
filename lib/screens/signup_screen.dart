@@ -1,10 +1,8 @@
 import 'dart:math';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/device_info.dart';
 
 class SignupScreen extends StatefulWidget {
   final String? initialReferralCode;
@@ -41,23 +39,6 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
-  Future<String?> _getDeviceId() async {
-    final info = DeviceInfoPlugin();
-    try {
-      if (kIsWeb) {
-        final web = await info.webBrowserInfo;
-        return web.userAgent;
-      } else if (Platform.isAndroid) {
-        final android = await info.androidInfo;
-        return android.id;
-      } else if (Platform.isIOS) {
-        final ios = await info.iosInfo;
-        return ios.identifierForVendor;
-      }
-    } catch (_) {}
-    return null;
-  }
-
   String _generateRefCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     final rand = Random();
@@ -84,7 +65,7 @@ class _SignupScreenState extends State<SignupScreen> {
     try {
       final phone = _phoneController.text.trim();
       final syntheticEmail = _phoneToEmail(phone);
-      final deviceId = await _getDeviceId();
+      final deviceId = await getDeviceId();
 
       // 1. Create auth user using synthetic email derived from phone
       final res = await Supabase.instance.client.auth.signUp(

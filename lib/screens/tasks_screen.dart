@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:io' show Platform;
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../utils/device_info.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -58,23 +56,6 @@ class _TasksScreenState extends State<TasksScreen> {
     }
   }
 
-  Future<String?> _getDeviceId() async {
-    final info = DeviceInfoPlugin();
-    try {
-      if (kIsWeb) {
-        final web = await info.webBrowserInfo;
-        return web.userAgent;
-      } else if (Platform.isAndroid) {
-        final android = await info.androidInfo;
-        return android.id;
-      } else if (Platform.isIOS) {
-        final ios = await info.iosInfo;
-        return ios.identifierForVendor;
-      }
-    } catch (_) {}
-    return null;
-  }
-
   bool get _bioComplete {
     final name = _userProfile?['full_name'] as String?;
     return name != null && name.trim().isNotEmpty;
@@ -99,7 +80,7 @@ class _TasksScreenState extends State<TasksScreen> {
 
   Future<void> _handleQuickComplete(String taskUrl, String taskId) async {
     final user = Supabase.instance.client.auth.currentUser;
-    final deviceId = await _getDeviceId();
+    final deviceId = await getDeviceId();
 
     try {
       // 1. Instantly record the submission using their existing bio-data
@@ -151,7 +132,7 @@ class _TasksScreenState extends State<TasksScreen> {
 
   Future<void> _submitBioData(Map<String, dynamic> task) async {
     final user = Supabase.instance.client.auth.currentUser!;
-    final deviceId = await _getDeviceId();
+    final deviceId = await getDeviceId();
     try {
       await Supabase.instance.client.from('task_submissions').upsert({
         'user_id': user.id,
