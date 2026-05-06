@@ -14,11 +14,13 @@ class _TasksScreenState extends State<TasksScreen> {
   String _searchQuery = '';
   Map<String, dynamic>? _userProfile;
   bool _profileLoaded = false;
+  final Set<String> _submittedTaskIds = {};
 
   @override
   void initState() {
     super.initState();
     _loadProfile();
+    _loadSubmittedTasks();
   }
 
   Future<void> _loadProfile() async {
@@ -33,6 +35,22 @@ class _TasksScreenState extends State<TasksScreen> {
       setState(() {
         _userProfile = profile;
         _profileLoaded = true;
+      });
+    }
+  }
+
+  Future<void> _loadSubmittedTasks() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    final rows = await Supabase.instance.client
+        .from('user_tasks')
+        .select('task_id')
+        .eq('user_id', user.id);
+    if (mounted) {
+      setState(() {
+        _submittedTaskIds.addAll(
+          (rows as List).map((r) => r['task_id'].toString()),
+        );
       });
     }
   }
@@ -61,7 +79,12 @@ class _TasksScreenState extends State<TasksScreen> {
         'status': 'submitted',
       });
 
-      // 2. Take them to the destination
+      // 2. Mark locally so button updates immediately
+      if (mounted) {
+        setState(() => _submittedTaskIds.add(task['id'].toString()));
+      }
+
+      // 3. Take them to the destination
       final uri = Uri.tryParse(taskUrl.trim());
       if (uri == null) return;
       if (await canLaunchUrl(uri)) {
@@ -92,6 +115,11 @@ class _TasksScreenState extends State<TasksScreen> {
         'location': _userProfile!['location'],
         'submitted_at': DateTime.now().toIso8601String(),
       });
+
+      // Mark locally so button updates immediately
+      if (mounted) {
+        setState(() => _submittedTaskIds.add(task['id'].toString()));
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -454,44 +482,84 @@ class _TasksScreenState extends State<TasksScreen> {
                                 ],
                               ]),
 
-                              // COMPLETE BUTTON
+                              // COMPLETE / COMPLETED BUTTON
                               if (!noSlots) ...[
                                 const SizedBox(height: 14),
                                 const Divider(
                                     color: Colors.white10, height: 1),
                                 const SizedBox(height: 14),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: _profileLoaded
-                                        ? () => _onComplete(task)
-                                        : null,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: _bioComplete
-                                          ? const Color(0xFF10B981)
-                                          : const Color(0xFF334155),
-                                      disabledBackgroundColor:
-                                          const Color(0xFF334155),
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 13),
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12)),
-                                    ),
-                                    child: Text(
-                                      _bioComplete
-                                          ? 'Complete'
-                                          : 'Complete your profile first',
-                                      style: TextStyle(
-                                        color: _bioComplete
-                                            ? Colors.white
-                                            : Colors.white38,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
+                                Builder(builder: (_) {
+                                  final isSubmitted = _submittedTaskIds
+                                      .contains(task['id'].toString());
+
+                                  if (isSubmitted) {
+                                    return Opacity(
+                                      opacity: 0.45,
+                                      child: SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton.icon(
+                                          onPressed: null,
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                const Color(0xFF334155),
+                                            disabledBackgroundColor:
+                                                const Color(0xFF334155),
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 13),
+                                            shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12)),
+                                          ),
+                                          icon: const Icon(
+                                              Icons.check_circle_outline,
+                                              color: Color(0xFF10B981),
+                                              size: 17),
+                                          label: const Text(
+                                            'Completed',
+                                            style: TextStyle(
+                                              color: Colors.white54,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+
+                                  return SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      onPressed: _profileLoaded
+                                          ? () => _onComplete(task)
+                                          : null,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: _bioComplete
+                                            ? const Color(0xFF10B981)
+                                            : const Color(0xFF334155),
+                                        disabledBackgroundColor:
+                                            const Color(0xFF334155),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 13),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12)),
+                                      ),
+                                      child: Text(
+                                        _bioComplete
+                                            ? 'Complete'
+                                            : 'Complete your profile first',
+                                        style: TextStyle(
+                                          color: _bioComplete
+                                              ? Colors.white
+                                              : Colors.white38,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ),
+                                  );
+                                }),
                               ],
                             ],
                           ),
