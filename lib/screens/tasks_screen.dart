@@ -329,13 +329,20 @@ class _TasksScreenState extends State<TasksScreen> {
                 final allTasks = snapshot.data ?? [];
 
                 // Build filter chip options from available task types
+                const _hardcodedTypes = {'Brand Deals', 'Physical'};
                 final taskTypes = allTasks
                     .map((t) => t['task_type'] as String? ?? '')
-                    .where((s) => s.isNotEmpty)
+                    .where((s) => s.isNotEmpty && !_hardcodedTypes.contains(s))
                     .toSet()
                     .toList()
                   ..sort();
-                final filterOptions = ['All', '🔥 Hot', ...taskTypes];
+                final filterOptions = [
+                  'All',
+                  '🔥 Hot',
+                  'Brand Deals',
+                  'Physical',
+                  ...taskTypes,
+                ];
 
                 // Apply search + filter
                 final tasks = allTasks.where((t) {
@@ -366,6 +373,26 @@ class _TasksScreenState extends State<TasksScreen> {
                     itemBuilder: (context, i) {
                       final label = filterOptions[i];
                       final selected = _selectedFilter == label;
+                      final isBrandDeals = label == 'Brand Deals';
+
+                      final Color bgColor;
+                      final Color borderColor;
+                      final Color textColor;
+
+                      if (selected) {
+                        bgColor = const Color(0xFF10B981);
+                        borderColor = const Color(0xFF10B981);
+                        textColor = Colors.white;
+                      } else if (isBrandDeals) {
+                        bgColor = const Color(0x2010B981);
+                        borderColor = const Color(0xFF10B981);
+                        textColor = const Color(0xFF10B981);
+                      } else {
+                        bgColor = const Color(0xFF1E293B);
+                        borderColor = Colors.white12;
+                        textColor = Colors.white54;
+                      }
+
                       return GestureDetector(
                         onTap: () =>
                             setState(() => _selectedFilter = label),
@@ -374,23 +401,16 @@ class _TasksScreenState extends State<TasksScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 7),
                           decoration: BoxDecoration(
-                            color: selected
-                                ? const Color(0xFF10B981)
-                                : const Color(0xFF1E293B),
+                            color: bgColor,
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: selected
-                                  ? const Color(0xFF10B981)
-                                  : Colors.white12,
-                            ),
+                            border: Border.all(color: borderColor),
                           ),
                           child: Text(
                             label,
                             style: TextStyle(
-                              color:
-                                  selected ? Colors.white : Colors.white54,
+                              color: textColor,
                               fontSize: 12,
-                              fontWeight: selected
+                              fontWeight: (selected || isBrandDeals)
                                   ? FontWeight.bold
                                   : FontWeight.normal,
                             ),
