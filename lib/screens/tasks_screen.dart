@@ -329,7 +329,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 final allTasks = snapshot.data ?? [];
 
                 // Build filter chip options from available task types
-                const _hardcodedTypes = {'Brand Deals', 'Physical'};
+                const _hardcodedTypes = {'Student Offers', 'Physical'};
                 final taskTypes = allTasks
                     .map((t) => t['task_type'] as String? ?? '')
                     .where((s) => s.isNotEmpty && !_hardcodedTypes.contains(s))
@@ -339,7 +339,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 final filterOptions = [
                   'All',
                   '🔥 Hot',
-                  'Brand Deals',
+                  'Student Offers',
                   'Physical',
                   ...taskTypes,
                 ];
@@ -373,7 +373,7 @@ class _TasksScreenState extends State<TasksScreen> {
                     itemBuilder: (context, i) {
                       final label = filterOptions[i];
                       final selected = _selectedFilter == label;
-                      final isBrandDeals = label == 'Brand Deals';
+                      final isBrandDeals = label == 'Student Offers';
 
                       final Color bgColor;
                       final Color borderColor;
