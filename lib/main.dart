@@ -10,7 +10,7 @@ Future<void> main() async {
 
   await Supabase.initialize(
     url: 'https://xbutdfqkvigwxrwgoyuy.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2eXN1Y3Jxcmt2dnFhbXRwd3JkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNTAxMTksImV4cCI6MjA5MjYyNjExOX0.syfsCC2qJZ_glLAIXaoRoPMeoIN7vOmJXK1CJeJ_zWE',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhidXRkZnFrdmlnd3hyd2dveXV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTI1OTYsImV4cCI6MjA5MzM4ODU5Nn0.RKvb4lmxkl8TseYCXaWqTIXdhgdb0bW_TDNrKYgPpmE',
   );
 
   runApp(const CampusTaskApp());
