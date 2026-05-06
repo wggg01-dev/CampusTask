@@ -107,8 +107,8 @@ class _TasksScreenState extends State<TasksScreen> {
       await Supabase.instance.client.from('task_submissions').upsert({
         'user_id': user?.id,
         'task_id': taskId,
+        'device_id': deviceId,
         'status': 'pending',
-        if (deviceId != null) 'device_id': deviceId,
       });
 
       // 2. Mark locally so button updates immediately
@@ -123,9 +123,13 @@ class _TasksScreenState extends State<TasksScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final errorStr = e.toString();
+        final message = errorStr.contains('unique_task_per_device')
+            ? 'This device has already completed this task.'
+            : 'Submission failed: $e';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Submission failed: $e'),
+            content: Text(message),
             behavior: SnackBarBehavior.floating,
           ),
         );
