@@ -66,6 +66,14 @@ class _SignupScreenState extends State<SignupScreen> {
         'pending_balance_ngn': 0,
       });
 
+      // 5. Trigger referral reward if a code was used
+      if (referredBy != null) {
+        await Supabase.instance.client.functions.invoke(
+          'handle-referral',
+          body: {'new_user_id': newUser.id, 'ref_code': friendCode},
+        );
+      }
+
       // AuthGate will detect the new session and navigate automatically
     } catch (e) {
       if (mounted) {
