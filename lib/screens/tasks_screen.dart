@@ -13,6 +13,7 @@ class TasksScreen extends StatefulWidget {
 class _TasksScreenState extends State<TasksScreen> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
+  String _selectedFilter = 'All';
   Map<String, dynamic>? _userProfile;
   bool _profileLoaded = false;
   final Set<String> _submittedTaskIds = {};
@@ -326,32 +327,109 @@ class _TasksScreenState extends State<TasksScreen> {
                 }
 
                 final allTasks = snapshot.data ?? [];
-                final tasks = _searchQuery.isEmpty
-                    ? allTasks
-                    : allTasks.where((t) {
-                        final title =
-                            (t['title'] as String? ?? '').toLowerCase();
-                        final appName =
-                            (t['app_name'] as String? ?? '').toLowerCase();
-                        return title.contains(_searchQuery) ||
-                            appName.contains(_searchQuery);
-                      }).toList();
+
+                // Build filter chip options from available task types
+                final taskTypes = allTasks
+                    .map((t) => t['task_type'] as String? ?? '')
+                    .where((s) => s.isNotEmpty)
+                    .toSet()
+                    .toList()
+                  ..sort();
+                final filterOptions = ['All', '🔥 Hot', ...taskTypes];
+
+                // Apply search + filter
+                final tasks = allTasks.where((t) {
+                  final title = (t['title'] as String? ?? '').toLowerCase();
+                  final appName =
+                      (t['app_name'] as String? ?? '').toLowerCase();
+                  final matchesSearch = _searchQuery.isEmpty ||
+                      title.contains(_searchQuery) ||
+                      appName.contains(_searchQuery);
+
+                  final priority = t['priority_score'] as int? ?? 0;
+                  final type = t['task_type'] as String? ?? '';
+                  final matchesFilter = _selectedFilter == 'All' ||
+                      (_selectedFilter == '🔥 Hot' && priority >= 8) ||
+                      type == _selectedFilter;
+
+                  return matchesSearch && matchesFilter;
+                }).toList();
+
+                // FILTER CHIPS
+                final chipRow = SizedBox(
+                  height: 38,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: filterOptions.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (context, i) {
+                      final label = filterOptions[i];
+                      final selected = _selectedFilter == label;
+                      return GestureDetector(
+                        onTap: () =>
+                            setState(() => _selectedFilter = label),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFF1E293B),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: selected
+                                  ? const Color(0xFF10B981)
+                                  : Colors.white12,
+                            ),
+                          ),
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              color:
+                                  selected ? Colors.white : Colors.white54,
+                              fontSize: 12,
+                              fontWeight: selected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
 
                 if (tasks.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      _searchQuery.isEmpty
-                          ? 'No tasks available right now. Check back soon!'
-                          : 'No tasks match "$_searchQuery".',
-                      style: const TextStyle(color: Colors.white38),
-                      textAlign: TextAlign.center,
-                    ),
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      chipRow,
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Text(
+                          _searchQuery.isNotEmpty
+                              ? 'No tasks match "$_searchQuery".'
+                              : _selectedFilter != 'All'
+                                  ? 'No "$_selectedFilter" tasks right now.'
+                                  : 'No tasks available right now. Check back soon!',
+                          style: const TextStyle(color: Colors.white38),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
                   );
                 }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                return Column(
+                  children: [
+                    chipRow,
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                   itemCount: tasks.length,
                   itemBuilder: (context, index) {
                     final task = tasks[index];
@@ -597,6 +675,9 @@ class _TasksScreenState extends State<TasksScreen> {
                       ),
                     );
                   },
+                      ),
+                    ),
+                  ],
                 );
               },
             ),
