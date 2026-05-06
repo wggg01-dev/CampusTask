@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'bank_setup_screen.dart';
 import 'payout_history_screen.dart';
+import 'profile_screen.dart';
 import 'spin_wheel_screen.dart';
 import 'withdraw_screen.dart';
 
@@ -61,6 +62,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             tooltip: 'Bank Setup',
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const BankSetupScreen()),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.person_outline),
+            tooltip: 'Profile',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
             ),
           ),
           IconButton(
