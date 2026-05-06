@@ -1,6 +1,9 @@
 import 'dart:math';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -38,6 +41,23 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
+  Future<String?> _getDeviceId() async {
+    final info = DeviceInfoPlugin();
+    try {
+      if (kIsWeb) {
+        final web = await info.webBrowserInfo;
+        return web.userAgent;
+      } else if (Platform.isAndroid) {
+        final android = await info.androidInfo;
+        return android.id;
+      } else if (Platform.isIOS) {
+        final ios = await info.iosInfo;
+        return ios.identifierForVendor;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   String _generateRefCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     final rand = Random();
@@ -64,6 +84,7 @@ class _SignupScreenState extends State<SignupScreen> {
     try {
       final phone = _phoneController.text.trim();
       final syntheticEmail = _phoneToEmail(phone);
+      final deviceId = await _getDeviceId();
 
       // 1. Create auth user using synthetic email derived from phone
       final res = await Supabase.instance.client.auth.signUp(
@@ -88,7 +109,7 @@ class _SignupScreenState extends State<SignupScreen> {
         referredBy = referrer?['id'] as String?;
       }
 
-      // 4. Create profile with bio-data
+      // 4. Create profile with bio-data + device ID for fraud detection
       await Supabase.instance.client.from('profiles').upsert({
         'id': newUser.id,
         'ref_code': refCode,
@@ -102,6 +123,7 @@ class _SignupScreenState extends State<SignupScreen> {
         'phone': phone,
         'location': _locationController.text.trim(),
         'phone_verified': false,
+        if (deviceId != null) 'device_id': deviceId,
       });
 
       // 5. Trigger referral reward if applicable
@@ -121,8 +143,12 @@ class _SignupScreenState extends State<SignupScreen> {
       // AuthGate + _OnboardingGate will detect the session and route to OtpScreen
     } catch (e) {
       if (mounted) {
+        final errorStr = e.toString();
+        final message = errorStr.contains('unique_device_per_profile')
+            ? 'An account already exists for this device.'
+            : errorStr;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
+          SnackBar(content: Text(message)),
         );
       }
     } finally {
