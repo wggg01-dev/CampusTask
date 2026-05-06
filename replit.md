@@ -62,6 +62,10 @@ Each screen just updates the DB. The StreamBuilder re-evaluates and navigates au
 - `daily-spin` — handles spin reward logic
 - `handle-referral` — credits referrer on new signup
 
+## Auth Strategy
+
+Phone-based login — no email shown to the user. Internally, Supabase auth uses a synthetic email derived from the phone number: `${sanitizedPhone}@campustask.app`. Both `signup_screen.dart` and `login_screen.dart` apply the same `_phoneToEmail()` conversion so credentials always match.
+
 ## Key Dependencies
 
 - `supabase_flutter: ^2.3.0` — Auth + real-time database + edge functions

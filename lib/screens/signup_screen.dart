@@ -15,7 +15,6 @@ class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
 
   // Account fields
-  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _friendCodeController = TextEditingController();
 
@@ -45,6 +44,13 @@ class _SignupScreenState extends State<SignupScreen> {
     return List.generate(6, (_) => chars[rand.nextInt(chars.length)]).join();
   }
 
+  /// Converts a phone number to a synthetic email for Supabase auth.
+  /// e.g. +2348012345678 → 2348012345678@campustask.app
+  String _phoneToEmail(String phone) {
+    final sanitized = phone.trim().replaceAll('+', '').replaceAll(' ', '');
+    return '$sanitized@campustask.app';
+  }
+
   Future<void> _signUp() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedGender == null) {
@@ -56,9 +62,12 @@ class _SignupScreenState extends State<SignupScreen> {
 
     setState(() => _isLoading = true);
     try {
-      // 1. Create auth user
+      final phone = _phoneController.text.trim();
+      final syntheticEmail = _phoneToEmail(phone);
+
+      // 1. Create auth user using synthetic email derived from phone
       final res = await Supabase.instance.client.auth.signUp(
-        email: _emailController.text.trim(),
+        email: syntheticEmail,
         password: _passwordController.text.trim(),
       );
       final newUser = res.user;
@@ -78,8 +87,6 @@ class _SignupScreenState extends State<SignupScreen> {
             .maybeSingle();
         referredBy = referrer?['id'] as String?;
       }
-
-      final phone = _phoneController.text.trim();
 
       // 4. Create profile with bio-data
       await Supabase.instance.client.from('profiles').upsert({
@@ -125,7 +132,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void dispose() {
-    _emailController.dispose();
     _passwordController.dispose();
     _friendCodeController.dispose();
     _nameController.dispose();
@@ -196,46 +202,9 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 const SizedBox(height: 36),
 
-                // ── ACCOUNT ───────────────────────────────────────────────
-                _sectionHeader('Account Details', 'Used to log in'),
-                const SizedBox(height: 14),
-
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: _inputDeco('Email'),
-                  validator: (v) =>
-                      v == null || !v.contains('@') ? 'Enter a valid email' : null,
-                ),
-                const SizedBox(height: 14),
-
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  decoration: _inputDeco(
-                    'Password',
-                    suffix: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                        color: Colors.white38,
-                        size: 20,
-                      ),
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
-                    ),
-                  ),
-                  validator: (v) => v == null || v.length < 6
-                      ? 'Password must be at least 6 characters'
-                      : null,
-                ),
-
-                const SizedBox(height: 32),
-
                 // ── BIO DATA ──────────────────────────────────────────────
                 _sectionHeader(
-                    'Your Details', 'Stored permanently · used for task matching'),
+                    'Your Details', 'Used for task matching'),
                 const SizedBox(height: 14),
 
                 TextFormField(
@@ -306,13 +275,15 @@ class _SignupScreenState extends State<SignupScreen> {
                 TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
-                  decoration: _inputDeco('WhatsApp Number',
-                      hint: '+2348012345678',
-                      suffix: const Padding(
-                        padding: EdgeInsets.only(right: 12),
-                        child: Icon(Icons.chat_bubble_outline_rounded,
-                            color: Color(0xFF25D366), size: 18),
-                      )),
+                  decoration: _inputDeco(
+                    'WhatsApp Number',
+                    hint: '+2348012345678',
+                    suffix: const Padding(
+                      padding: EdgeInsets.only(right: 12),
+                      child: Icon(Icons.chat_bubble_outline_rounded,
+                          color: Color(0xFF25D366), size: 18),
+                    ),
+                  ),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Required';
                     if (!v.trim().startsWith('+')) {
@@ -334,8 +305,36 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 32),
 
+                // ── ACCOUNT ───────────────────────────────────────────────
+                _sectionHeader('Password', 'At least 6 characters'),
+                const SizedBox(height: 14),
+
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  decoration: _inputDeco(
+                    'Password',
+                    suffix: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        color: Colors.white38,
+                        size: 20,
+                      ),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
+                    ),
+                  ),
+                  validator: (v) => v == null || v.length < 6
+                      ? 'Password must be at least 6 characters'
+                      : null,
+                ),
+
+                const SizedBox(height: 32),
+
                 // ── REFERRAL (optional) ───────────────────────────────────
-                _sectionHeader("Referral", 'Optional'),
+                _sectionHeader('Referral', 'Optional'),
                 const SizedBox(height: 14),
 
                 TextFormField(
