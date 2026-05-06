@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'main_screen.dart';
 
 class RulesScreen extends StatefulWidget {
   const RulesScreen({super.key});
@@ -99,11 +98,8 @@ class _RulesScreenState extends State<RulesScreen> {
         'rules_accepted_at': DateTime.now().toIso8601String(),
       }).eq('id', user!.id);
 
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const MainScreen()),
-        );
-      }
+      // Gate (_OnboardingGate) reacts to has_accepted_rules = true
+      // and navigates to MainScreen automatically via StreamBuilder
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

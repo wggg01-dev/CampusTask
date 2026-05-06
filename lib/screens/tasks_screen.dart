@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -11,6 +12,145 @@ class TasksScreen extends StatefulWidget {
 class _TasksScreenState extends State<TasksScreen> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
+  Map<String, dynamic>? _userProfile;
+  bool _profileLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    final profile = await Supabase.instance.client
+        .from('profiles')
+        .select('id, full_name, age, gender, phone, location')
+        .eq('id', user.id)
+        .single();
+    if (mounted) {
+      setState(() {
+        _userProfile = profile;
+        _profileLoaded = true;
+      });
+    }
+  }
+
+  bool get _bioComplete {
+    final name = _userProfile?['full_name'] as String?;
+    return name != null && name.trim().isNotEmpty;
+  }
+
+  Future<void> _onComplete(Map<String, dynamic> task) async {
+    if (!_bioComplete) {
+      _showBioBlockedDialog();
+      return;
+    }
+
+    final taskUrl = task['task_url'] as String?;
+
+    if (taskUrl != null && taskUrl.trim().isNotEmpty) {
+      // ── Workflow 1: Navigate to URL ──────────────────────────────
+      final uri = Uri.tryParse(taskUrl.trim());
+      if (uri == null) return;
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open task link.')),
+          );
+        }
+      }
+    } else {
+      // ── Workflow 2: Submit bio-data automatically ────────────────
+      await _submitBioData(task);
+    }
+  }
+
+  Future<void> _submitBioData(Map<String, dynamic> task) async {
+    final user = Supabase.instance.client.auth.currentUser!;
+    try {
+      await Supabase.instance.client.from('task_submissions').upsert({
+        'user_id': user.id,
+        'task_id': task['id'],
+        'full_name': _userProfile!['full_name'],
+        'age': _userProfile!['age'],
+        'gender': _userProfile!['gender'],
+        'phone': _userProfile!['phone'],
+        'location': _userProfile!['location'],
+        'submitted_at': DateTime.now().toIso8601String(),
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle,
+                    color: Color(0xFF10B981), size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Submitted! "${task['title']}" is now under review.',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF1E293B),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Submission failed: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  void _showBioBlockedDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.lock_outline, color: Colors.amber, size: 22),
+            SizedBox(width: 10),
+            Text(
+              'Profile Incomplete',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ],
+        ),
+        content: const Text(
+          'You need to complete your profile before you can complete tasks.\n\nGo to Settings → Profile to fill in your details.',
+          style: TextStyle(color: Colors.white60, height: 1.6),
+        ),
+        actions: [
+          Center(
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF10B981),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Got it',
+                  style: TextStyle(color: Colors.white)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -42,8 +182,8 @@ class _TasksScreenState extends State<TasksScreen> {
               decoration: InputDecoration(
                 hintText: 'Search tasks or apps...',
                 hintStyle: const TextStyle(color: Colors.white38),
-                prefixIcon: const Icon(Icons.search,
-                    color: Colors.white38, size: 20),
+                prefixIcon:
+                    const Icon(Icons.search, color: Colors.white38, size: 20),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.close,
@@ -65,13 +205,39 @@ class _TasksScreenState extends State<TasksScreen> {
             ),
           ),
 
+          // BIO WARNING BANNER
+          if (_profileLoaded && !_bioComplete)
+            Container(
+              margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0x1AFBBF24),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0x66FBBF24)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded,
+                      color: Colors.amber, size: 18),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Complete your profile to unlock task completion.',
+                      style: TextStyle(color: Colors.amber, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           // TASK LIST
           Expanded(
             child: FutureBuilder<List<Map<String, dynamic>>>(
               future: Supabase.instance.client
                   .from('tasks')
                   .select(
-                      'app_name, title, user_payout_ngn, task_type, slots_left, is_active, created_at, priority_level, task_url, form_url, description')
+                      'id, app_name, title, user_payout_ngn, task_type, slots_left, is_active, created_at, priority_level, task_url, description')
                   .eq('is_active', true)
                   .order('priority_level', ascending: false)
                   .order('created_at', ascending: false),
@@ -129,9 +295,10 @@ class _TasksScreenState extends State<TasksScreen> {
                     final slotsLeft = task['slots_left'] as int?;
                     final priority = task['priority_level'] as int? ?? 0;
                     final taskUrl = task['task_url'] as String?;
-                    final formUrl = task['form_url'] as String?;
                     final isHighPriority = priority >= 8;
                     final noSlots = slotsLeft != null && slotsLeft <= 0;
+                    final hasUrl =
+                        taskUrl != null && taskUrl.trim().isNotEmpty;
 
                     return Opacity(
                       opacity: noSlots ? 0.45 : 1.0,
@@ -168,59 +335,49 @@ class _TasksScreenState extends State<TasksScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Row(
-                                          children: [
-                                            if (appName.isNotEmpty)
-                                              Text(
-                                                appName,
+                                        Row(children: [
+                                          if (appName.isNotEmpty)
+                                            Text(appName,
                                                 style: const TextStyle(
-                                                  color: Colors.white54,
-                                                  fontSize: 11,
-                                                ),
+                                                    color: Colors.white54,
+                                                    fontSize: 11)),
+                                          if (isHighPriority) ...[
+                                            const SizedBox(width: 6),
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0x33FBBF24),
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
                                               ),
-                                            if (isHighPriority) ...[
-                                              const SizedBox(width: 6),
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 6,
-                                                        vertical: 2),
-                                                decoration: BoxDecoration(
-                                                  color: const Color(0x33FBBF24),
-                                                  borderRadius:
-                                                      BorderRadius.circular(6),
-                                                ),
-                                                child: const Text(
-                                                  'HOT',
+                                              child: const Text('HOT',
                                                   style: TextStyle(
-                                                    color: Color(0xFFFBBF24),
-                                                    fontSize: 9,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
+                                                      color: Color(0xFFFBBF24),
+                                                      fontSize: 9,
+                                                      fontWeight:
+                                                          FontWeight.bold)),
+                                            ),
                                           ],
-                                        ),
+                                        ]),
                                         const SizedBox(height: 2),
-                                        Text(
-                                          title,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 15,
-                                          ),
-                                        ),
+                                        Text(title,
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 15)),
                                       ],
                                     ),
                                   ),
-                                  // PAYOUT BADGE
                                   if (payout != null)
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 10, vertical: 6),
                                       decoration: BoxDecoration(
                                         color: const Color(0x224ADE80),
-                                        borderRadius: BorderRadius.circular(10),
+                                        borderRadius:
+                                            BorderRadius.circular(10),
                                       ),
                                       child: Text(
                                         '₦${payout.toString()}',
@@ -241,83 +398,87 @@ class _TasksScreenState extends State<TasksScreen> {
                                 Text(
                                   description,
                                   style: const TextStyle(
-                                    color: Colors.white60,
-                                    fontSize: 13,
-                                    height: 1.5,
-                                  ),
+                                      color: Colors.white60,
+                                      fontSize: 13,
+                                      height: 1.5),
                                 ),
                               ],
 
                               const SizedBox(height: 12),
 
                               // META ROW
-                              Row(
-                                children: [
-                                  if (taskType.isNotEmpty)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF334155),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        taskType,
+                              Row(children: [
+                                if (taskType.isNotEmpty)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF334155),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(taskType,
                                         style: const TextStyle(
-                                          color: Colors.white54,
-                                          fontSize: 11,
-                                        ),
-                                      ),
+                                            color: Colors.white54,
+                                            fontSize: 11)),
+                                  ),
+                                if (slotsLeft != null) ...[
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    noSlots ? 'Full' : '$slotsLeft slots left',
+                                    style: TextStyle(
+                                      color: noSlots
+                                          ? Colors.redAccent
+                                          : Colors.white38,
+                                      fontSize: 11,
                                     ),
-                                  if (slotsLeft != null) ...[
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      noSlots
-                                          ? 'Full'
-                                          : '$slotsLeft slots left',
-                                      style: TextStyle(
-                                        color: noSlots
-                                            ? Colors.redAccent
-                                            : Colors.white38,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ],
+                                  ),
                                 ],
-                              ),
+                                if (hasUrl) ...[
+                                  const Spacer(),
+                                  const Icon(Icons.open_in_new_rounded,
+                                      color: Colors.white24, size: 14),
+                                  const SizedBox(width: 4),
+                                  const Text('Opens link',
+                                      style: TextStyle(
+                                          color: Colors.white24, fontSize: 11)),
+                                ],
+                              ]),
 
                               // COMPLETE BUTTON
                               if (!noSlots) ...[
                                 const SizedBox(height: 14),
-                                const Divider(color: Colors.white10, height: 1),
+                                const Divider(
+                                    color: Colors.white10, height: 1),
                                 const SizedBox(height: 14),
                                 SizedBox(
                                   width: double.infinity,
                                   child: ElevatedButton(
-                                    onPressed: () {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                              'Starting task: $title'),
-                                          behavior: SnackBarBehavior.floating,
-                                        ),
-                                      );
-                                    },
+                                    onPressed: _profileLoaded
+                                        ? () => _onComplete(task)
+                                        : null,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF10B981),
+                                      backgroundColor: _bioComplete
+                                          ? const Color(0xFF10B981)
+                                          : const Color(0xFF334155),
+                                      disabledBackgroundColor:
+                                          const Color(0xFF334155),
                                       padding: const EdgeInsets.symmetric(
                                           vertical: 13),
                                       shape: RoundedRectangleBorder(
                                           borderRadius:
                                               BorderRadius.circular(12)),
                                     ),
-                                    child: const Text(
-                                      'Complete',
+                                    child: Text(
+                                      _bioComplete
+                                          ? 'Complete'
+                                          : 'Complete your profile first',
                                       style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold),
+                                        color: _bioComplete
+                                            ? Colors.white
+                                            : Colors.white38,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 ),

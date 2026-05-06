@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app_links/app_links.dart';
+import 'screens/bio_data_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
+import 'screens/otp_screen.dart';
 import 'screens/rules_screen.dart';
 import 'screens/signup_screen.dart';
 
@@ -40,12 +42,8 @@ class _CampusTaskAppState extends State<CampusTaskApp> {
 
   Future<void> _initDeepLinks() async {
     _appLinks = AppLinks();
-
-    // Handle link that cold-started the app
     final initialUri = await _appLinks.getInitialLink();
     if (initialUri != null) _handleUri(initialUri);
-
-    // Handle links while the app is already running
     _linkSub = _appLinks.uriLinkStream.listen(_handleUri);
   }
 
@@ -89,6 +87,8 @@ class _CampusTaskAppState extends State<CampusTaskApp> {
   }
 }
 
+// ── Auth gate ─────────────────────────────────────────────────────────────────
+
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
@@ -98,42 +98,62 @@ class AuthGate extends StatelessWidget {
       stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {
         final session = snapshot.data?.session;
-        if (session != null) {
-          return const _RulesGate();
-        }
+        if (session != null) return const _OnboardingGate();
         return const LoginScreen();
       },
     );
   }
 }
 
-// Checks whether the logged-in user has accepted the rules.
-// Shows RulesScreen once on first login, then goes straight to Dashboard.
-class _RulesGate extends StatelessWidget {
-  const _RulesGate();
+// ── Onboarding gate (reactive via StreamBuilder on profiles) ──────────────────
+//
+// Chain:  bio missing  →  BioDataScreen
+//         unverified   →  OtpScreen
+//         rules pending →  RulesScreen
+//         all done     →  MainScreen
+
+class _OnboardingGate extends StatelessWidget {
+  const _OnboardingGate();
 
   @override
   Widget build(BuildContext context) {
-    final user = Supabase.instance.client.auth.currentUser;
+    final user = Supabase.instance.client.auth.currentUser!;
 
-    return FutureBuilder(
-      future: Supabase.instance.client
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: Supabase.instance.client
           .from('profiles')
-          .select('has_accepted_rules')
-          .eq('id', user!.id)
-          .single(),
+          .stream(primaryKey: ['id']).eq('id', user.id),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return const Scaffold(
             backgroundColor: Color(0xFF0F172A),
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        final hasAccepted = snapshot.data?['has_accepted_rules'] == true;
-        if (hasAccepted) {
-          return const MainScreen();
+
+        final profile = snapshot.data!.first;
+        final fullName = profile['full_name'] as String?;
+        final phoneVerified = profile['phone_verified'] == true;
+        final hasAcceptedRules = profile['has_accepted_rules'] == true;
+        final phone = profile['phone'] as String?;
+
+        // 1. Bio-data missing
+        if (fullName == null || fullName.trim().isEmpty) {
+          return const BioDataScreen();
         }
-        return const RulesScreen();
+
+        // 2. Phone not verified
+        if (!phoneVerified) {
+          return OtpScreen(phone: phone ?? '');
+        }
+
+        // 3. Rules not yet accepted
+        if (!hasAcceptedRules) {
+          return const RulesScreen();
+        }
+
+        // 4. All good
+        return const MainScreen();
       },
     );
   }
