@@ -162,7 +162,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Submitted! "${task['title']}" is now under review.',
+                    'Submitted! "${task['task_name']}" is now under review.',
                     style: const TextStyle(color: Colors.white),
                   ),
                 ),
@@ -306,7 +306,7 @@ class _TasksScreenState extends State<TasksScreen> {
               future: Supabase.instance.client
                   .from('tasks')
                   .select(
-                      'id, app_name, title, user_payout_ngn, task_type, slots_left, is_active, created_at, priority_score, task_url, description, has_participation_bonus')
+                      'id, tasker_id, task_name, task_description, user_payout_ngn, task_type, slots_left, is_active, created_at, priority_score, task_url, has_participation_bonus')
                   .eq('is_active', true)
                   .order('priority_score', ascending: false)
                   .order('created_at', ascending: false),
@@ -346,17 +346,15 @@ class _TasksScreenState extends State<TasksScreen> {
 
                 // Apply search + filter
                 final tasks = allTasks.where((t) {
-                  final title = (t['title'] as String? ?? '').toLowerCase();
-                  final appName =
-                      (t['app_name'] as String? ?? '').toLowerCase();
+                  final taskName =
+                      (t['task_name'] as String? ?? '').toLowerCase();
                   final matchesSearch = _searchQuery.isEmpty ||
-                      title.contains(_searchQuery) ||
-                      appName.contains(_searchQuery);
+                      taskName.contains(_searchQuery);
 
                   final priority = t['priority_score'] as int? ?? 0;
                   final type = t['task_type'] as String? ?? '';
                   final matchesFilter = _selectedFilter == 'All' ||
-                      (_selectedFilter == '🔥 Hot' && priority >= 8) ||
+                      (_selectedFilter == '🔥 Hot' && priority == 1) ||
                       type == _selectedFilter;
 
                   return matchesSearch && matchesFilter;
@@ -453,15 +451,15 @@ class _TasksScreenState extends State<TasksScreen> {
                   itemCount: tasks.length,
                   itemBuilder: (context, index) {
                     final task = tasks[index];
-                    final title = task['title'] as String? ?? 'Task';
-                    final appName = task['app_name'] as String? ?? '';
-                    final description = task['description'] as String?;
+                    final taskerId = task['tasker_id']?.toString() ?? '';
+                    final taskName = task['task_name'] as String? ?? 'Task';
+                    final taskDescription = task['task_description'] as String?;
                     final payout = task['user_payout_ngn'];
                     final taskType = task['task_type'] as String? ?? '';
                     final slotsLeft = task['slots_left'] as int?;
                     final priority = task['priority_score'] as int? ?? 0;
                     final taskUrl = task['task_url'] as String?;
-                    final isHighPriority = priority >= 8;
+                    final isHot = priority == 1;
                     final noSlots = slotsLeft != null && slotsLeft <= 0;
                     final hasUrl =
                         taskUrl != null && taskUrl.trim().isNotEmpty;
@@ -475,7 +473,7 @@ class _TasksScreenState extends State<TasksScreen> {
                         color: const Color(0xFF1E293B),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),
-                          side: isHighPriority
+                          side: isHot
                               ? const BorderSide(
                                   color: Color(0xFFFBBF24), width: 1)
                               : const BorderSide(color: Colors.white10),
@@ -492,7 +490,7 @@ class _TasksScreenState extends State<TasksScreen> {
                                     backgroundColor: const Color(0xFF334155),
                                     child: Icon(
                                       Icons.bolt,
-                                      color: isHighPriority
+                                      color: isHot
                                           ? const Color(0xFFFBBF24)
                                           : const Color(0xFF4ADE80),
                                     ),
@@ -504,12 +502,12 @@ class _TasksScreenState extends State<TasksScreen> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Row(children: [
-                                          if (appName.isNotEmpty)
-                                            Text(appName,
+                                          if (taskerId.isNotEmpty)
+                                            Text('ID: $taskerId',
                                                 style: const TextStyle(
-                                                    color: Colors.white54,
-                                                    fontSize: 11)),
-                                          if (isHighPriority) ...[
+                                                    color: Colors.white38,
+                                                    fontSize: 10)),
+                                          if (isHot) ...[
                                             const SizedBox(width: 6),
                                             Container(
                                               padding:
@@ -521,7 +519,7 @@ class _TasksScreenState extends State<TasksScreen> {
                                                 borderRadius:
                                                     BorderRadius.circular(6),
                                               ),
-                                              child: const Text('HOT',
+                                              child: const Text('🔥 HOT',
                                                   style: TextStyle(
                                                       color: Color(0xFFFBBF24),
                                                       fontSize: 9,
@@ -531,7 +529,7 @@ class _TasksScreenState extends State<TasksScreen> {
                                           ],
                                         ]),
                                         const SizedBox(height: 2),
-                                        Text(title,
+                                        Text(taskName,
                                             style: const TextStyle(
                                                 fontWeight: FontWeight.w700,
                                                 fontSize: 15)),
@@ -560,11 +558,11 @@ class _TasksScreenState extends State<TasksScreen> {
                               ),
 
                               // DESCRIPTION
-                              if (description != null &&
-                                  description.isNotEmpty) ...[
+                              if (taskDescription != null &&
+                                  taskDescription.isNotEmpty) ...[
                                 const SizedBox(height: 12),
                                 Text(
-                                  description,
+                                  taskDescription,
                                   style: const TextStyle(
                                       color: Colors.white60,
                                       fontSize: 13,
