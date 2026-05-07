@@ -306,7 +306,7 @@ class _TasksScreenState extends State<TasksScreen> {
               future: Supabase.instance.client
                   .from('tasks')
                   .select(
-                      'id, app_name, title, user_payout_ngn, task_type, slots_left, is_active, created_at, priority_score, task_url, description')
+                      'id, app_name, title, user_payout_ngn, task_type, slots_left, is_active, created_at, priority_score, task_url, description, has_participation_bonus')
                   .eq('is_active', true)
                   .order('priority_score', ascending: false)
                   .order('created_at', ascending: false),
@@ -465,6 +465,8 @@ class _TasksScreenState extends State<TasksScreen> {
                     final noSlots = slotsLeft != null && slotsLeft <= 0;
                     final hasUrl =
                         taskUrl != null && taskUrl.trim().isNotEmpty;
+                    final hasParticipationBonus =
+                        task['has_participation_bonus'] as bool? ?? false;
 
                     return Opacity(
                       opacity: noSlots ? 0.45 : 1.0,
@@ -567,6 +569,29 @@ class _TasksScreenState extends State<TasksScreen> {
                                       color: Colors.white60,
                                       fontSize: 13,
                                       height: 1.5),
+                                ),
+                              ],
+
+                              // PARTICIPATION BONUS BADGE
+                              if (hasParticipationBonus) ...[
+                                const SizedBox(height: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amber.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border:
+                                        Border.all(color: Colors.amber),
+                                  ),
+                                  child: Text(
+                                    '🎁 Contains Participation Bonus',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.amber[900],
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
                               ],
 
