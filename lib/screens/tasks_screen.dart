@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../utils/device_info.dart';
+import '../models/task.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -62,17 +63,15 @@ class _TasksScreenState extends State<TasksScreen> {
     return name != null && name.trim().isNotEmpty;
   }
 
-  Future<void> _onComplete(Map<String, dynamic> task) async {
+  Future<void> _onComplete(Task task) async {
     if (!_bioComplete) {
       _showBioBlockedDialog();
       return;
     }
 
-    final taskUrl = task['task_url'] as String?;
-
-    if (taskUrl != null && taskUrl.trim().isNotEmpty) {
+    if (task.taskUrl != null && task.taskUrl!.trim().isNotEmpty) {
       // ── Workflow 1: Quick complete — record then launch URL ───────
-      await _handleQuickComplete(taskUrl.trim(), task['id'].toString());
+      await _handleQuickComplete(task.taskUrl!.trim(), task.taskerId);
     } else {
       // ── Workflow 2: Submit bio-data automatically ────────────────
       await _submitBioData(task);
@@ -131,13 +130,13 @@ class _TasksScreenState extends State<TasksScreen> {
     }
   }
 
-  Future<void> _submitBioData(Map<String, dynamic> task) async {
+  Future<void> _submitBioData(Task task) async {
     final user = Supabase.instance.client.auth.currentUser!;
     final deviceId = await getDeviceId();
     try {
       await Supabase.instance.client.from('task_submissions').upsert({
         'user_id': user.id,
-        'task_id': task['id'],
+        'task_id': task.taskerId,
         'full_name': _userProfile!['full_name'],
         'age': _userProfile!['age'],
         'gender': _userProfile!['gender'],
@@ -149,7 +148,7 @@ class _TasksScreenState extends State<TasksScreen> {
 
       // Mark locally so button updates immediately
       if (mounted) {
-        setState(() => _submittedTaskIds.add(task['id'].toString()));
+        setState(() => _submittedTaskIds.add(task.taskerId));
       }
 
       if (mounted) {
@@ -162,7 +161,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Submitted! "${task['task_name']}" is now under review.',
+                    'Submitted! "${task.taskName}" is now under review.',
                     style: const TextStyle(color: Colors.white),
                   ),
                 ),
@@ -306,7 +305,7 @@ class _TasksScreenState extends State<TasksScreen> {
               future: Supabase.instance.client
                   .from('tasks')
                   .select(
-                      'id, tasker_id, task_name, task_description, user_payout_ngn, task_type, slots_left, is_active, created_at, priority_score, task_url, has_participation_bonus')
+                      'id, app_name, title, user_payout_ngn, task_type, slots_left, is_active, created_at, priority_score, task_url, has_participation_bonus')
                   .eq('is_active', true)
                   .order('priority_score', ascending: false)
                   .order('created_at', ascending: false),
@@ -326,12 +325,14 @@ class _TasksScreenState extends State<TasksScreen> {
                   );
                 }
 
-                final allTasks = snapshot.data ?? [];
+                final allTasks = (snapshot.data ?? [])
+                    .map(Task.fromMap)
+                    .toList();
 
                 // Build filter chip options from available task types
                 const _hardcodedTypes = {'Student Offers', 'Physical'};
                 final taskTypes = allTasks
-                    .map((t) => t['task_type'] as String? ?? '')
+                    .map((t) => t.taskType)
                     .where((s) => s.isNotEmpty && !_hardcodedTypes.contains(s))
                     .toSet()
                     .toList()
@@ -346,17 +347,11 @@ class _TasksScreenState extends State<TasksScreen> {
 
                 // Apply search + filter
                 final tasks = allTasks.where((t) {
-                  final taskName =
-                      (t['task_name'] as String? ?? '').toLowerCase();
                   final matchesSearch = _searchQuery.isEmpty ||
-                      taskName.contains(_searchQuery);
-
-                  final priority = t['priority_score'] as int? ?? 0;
-                  final type = t['task_type'] as String? ?? '';
+                      t.taskName.toLowerCase().contains(_searchQuery);
                   final matchesFilter = _selectedFilter == 'All' ||
-                      (_selectedFilter == '🔥 Hot' && priority == 1) ||
-                      type == _selectedFilter;
-
+                      (_selectedFilter == '🔥 Hot' && t.priorityScore == 1) ||
+                      t.taskType == _selectedFilter;
                   return matchesSearch && matchesFilter;
                 }).toList();
 
@@ -451,20 +446,20 @@ class _TasksScreenState extends State<TasksScreen> {
                   itemCount: tasks.length,
                   itemBuilder: (context, index) {
                     final task = tasks[index];
-                    final taskerId = task['tasker_id']?.toString() ?? '';
-                    final taskName = task['task_name'] as String? ?? 'Task';
-                    final taskDescription = task['task_description'] as String?;
-                    final payout = task['user_payout_ngn'];
-                    final taskType = task['task_type'] as String? ?? '';
-                    final slotsLeft = task['slots_left'] as int?;
-                    final priority = task['priority_score'] as int? ?? 0;
-                    final taskUrl = task['task_url'] as String?;
-                    final isHot = priority == 1;
+                    // Convenience aliases from Task model
+                    final taskerId = task.taskerId;
+                    final taskName = task.taskName;
+                    final taskDescription =
+                        task.taskDescription.isEmpty ? null : task.taskDescription;
+                    final payout = task.userPayoutNgn;
+                    final taskType = task.taskType;
+                    final slotsLeft = task.slotsLeft;
+                    final taskUrl = task.taskUrl;
+                    final isHot = task.priorityScore == 1;
                     final noSlots = slotsLeft != null && slotsLeft <= 0;
                     final hasUrl =
                         taskUrl != null && taskUrl.trim().isNotEmpty;
-                    final hasParticipationBonus =
-                        task['has_participation_bonus'] as bool? ?? false;
+                    final hasParticipationBonus = task.hasParticipationBonus;
 
                     return Opacity(
                       opacity: noSlots ? 0.45 : 1.0,
@@ -641,7 +636,7 @@ class _TasksScreenState extends State<TasksScreen> {
                                 const SizedBox(height: 14),
                                 Builder(builder: (_) {
                                   final isSubmitted = _submittedTaskIds
-                                      .contains(task['id'].toString());
+                                      .contains(task.taskerId);
 
                                   if (isSubmitted) {
                                     return Opacity(
