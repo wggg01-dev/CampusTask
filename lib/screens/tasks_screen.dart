@@ -374,20 +374,13 @@ class _TasksScreenState extends State<TasksScreen> {
                     .map(Task.fromMap)
                     .toList();
 
-                // Build filter chip options from available task types
-                const _hardcodedTypes = {'Student Offers', 'Physical'};
-                final taskTypes = allTasks
-                    .map((t) => t.taskType)
-                    .where((s) => s.isNotEmpty && !_hardcodedTypes.contains(s))
-                    .toSet()
-                    .toList()
-                  ..sort();
-                final filterOptions = [
+                // Fixed task type categories
+                const filterOptions = [
                   'All',
                   '🔥 Hot',
-                  'Student Offers',
+                  'Online',
                   'Physical',
-                  ...taskTypes,
+                  'Student Offers',
                 ];
 
                 // Apply search + filter
