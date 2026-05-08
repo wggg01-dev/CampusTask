@@ -119,29 +119,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 fontWeight: FontWeight.bold, fontSize: 20, color: Colors.white),
           ),
 
-          // ── STATS ROW ─────────────────────────────────────────────────
+          // ── REPUTATION CARD ───────────────────────────────────────────
           const SizedBox(height: 28),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white10),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _statItem('Trust Score', '$trust%', Icons.verified_rounded),
-                _divider(),
-                _statItem('Reviews', '$totalReviews',
-                    Icons.rate_review_rounded),
-              ],
-            ),
-          ),
-
-          // ── EXCELLENCE SCORE ─────────────────────────────────────────
-          const SizedBox(height: 24),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(18),
@@ -150,7 +129,27 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.white10),
             ),
-            child: _buildExcellenceBlock(profile),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Excellence detail — the headline stat
+                _buildExcellenceBlock(profile),
+                const SizedBox(height: 18),
+                const Divider(color: Colors.white10, height: 1),
+                const SizedBox(height: 18),
+                // Supporting stats row below
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _statItem(
+                        'Trust Score', '$trust%', Icons.verified_rounded),
+                    _divider(),
+                    _statItem('Reviews', '$totalReviews',
+                        Icons.rate_review_rounded),
+                  ],
+                ),
+              ],
+            ),
           ),
 
           // ── REVIEWS ───────────────────────────────────────────────────
