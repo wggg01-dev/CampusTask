@@ -39,7 +39,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     try {
       final data = await Supabase.instance.client
           .from('profiles')
-          .select('nickname, profile_picture_url, likes_count, total_reviews')
+          .select('nickname, profile_picture_url, likes_count, total_reviews, total_tasks_liked, total_tasks_approved')
           .eq('id', widget.targetUserId)
           .single();
       if (mounted) setState(() { _profile = data; _isLoading = false; });
@@ -141,6 +141,19 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                     Icons.rate_review_rounded),
               ],
             ),
+          ),
+
+          // ── EXCELLENCE SCORE ─────────────────────────────────────────
+          const SizedBox(height: 24),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E293B),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white10),
+            ),
+            child: _buildExcellenceBlock(profile),
           ),
 
           // ── REVIEWS ───────────────────────────────────────────────────
@@ -251,6 +264,45 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildExcellenceBlock(Map<String, dynamic> profile) {
+    final liked = (profile['total_tasks_liked'] as num?)?.toInt() ?? 0;
+    final approved = (profile['total_tasks_approved'] as num?)?.toInt() ?? 0;
+    final ratio = approved > 0 ? liked / approved : 0.0;
+    final isHealthy = liked >= (approved / 2);
+    final scoreColor =
+        isHealthy ? const Color(0xFF10B981) : Colors.orange;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$liked out of $approved',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: scoreColor,
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          "Tasks marked as 'Excellent' by Taskers",
+          style: TextStyle(color: Colors.white38, fontSize: 12),
+        ),
+        const SizedBox(height: 12),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: LinearProgressIndicator(
+            minHeight: 8,
+            value: ratio.toDouble(),
+            backgroundColor: const Color(0xFF334155),
+            valueColor:
+                AlwaysStoppedAnimation<Color>(scoreColor),
+          ),
+        ),
+      ],
     );
   }
 
