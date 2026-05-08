@@ -16,6 +16,7 @@ dependencies:
   app_links: ^6.0.0
   url_launcher: ^6.3.0
   device_info_plus: ^10.1.0
+  file_picker: ^8.0.0
 
 dev_dependencies:
   flutter_test:

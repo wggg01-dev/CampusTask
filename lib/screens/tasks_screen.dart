@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:file_picker/file_picker.dart';
 import '../utils/device_info.dart';
 import '../models/task.dart';
 
@@ -35,6 +36,13 @@ class _TasksScreenState extends State<TasksScreen> {
       c.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _pickFile(String taskerId) async {
+    final result = await FilePicker.platform.pickFiles();
+    if (result != null && result.files.isNotEmpty && mounted) {
+      setState(() => _userFiles[taskerId] = result.files.first.name);
+    }
   }
 
   Future<void> _loadProfile() async {
@@ -82,13 +90,21 @@ class _TasksScreenState extends State<TasksScreen> {
 
     // ── Proof validation ─────────────────────────────────────────
     if (task.proofType != 'none') {
-      final proofUrl = _proofUrlControllers[task.taskerId]?.text ?? '';
+      final proofUrl =
+          _proofUrlControllers[task.taskerId]?.text.trim() ?? '';
       final userFile = _userFiles[task.taskerId];
-      if (proofUrl.isEmpty && userFile == null) {
+      final bool proofMissing = switch (task.proofType) {
+        'url' => proofUrl.isEmpty,
+        'file' => userFile == null,
+        'both' => proofUrl.isEmpty || userFile == null,
+        _ => false,
+      };
+      if (proofMissing) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text("Proof was required but wasn't uploaded"),
+              content:
+                  Text("Proof was required but wasn't recorded"),
               backgroundColor: Colors.redAccent,
               behavior: SnackBarBehavior.floating,
             ),
@@ -661,41 +677,116 @@ class _TasksScreenState extends State<TasksScreen> {
                                 ],
                               ]),
 
-                              // PROOF INPUT (shown when task requires proof)
+                              // PROOF INPUT — driven entirely by tasker's proof_type
                               if (proofType != 'none') ...[
                                 const SizedBox(height: 12),
-                                TextField(
-                                  controller: proofController,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 13),
-                                  decoration: InputDecoration(
-                                    hintText: 'Paste your proof URL here',
-                                    hintStyle: const TextStyle(
-                                        color: Colors.white38, fontSize: 13),
-                                    filled: true,
-                                    fillColor: const Color(0xFF0F172A),
-                                    contentPadding:
-                                        const EdgeInsets.symmetric(
-                                            horizontal: 14, vertical: 10),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                      borderSide: const BorderSide(
-                                          color: Colors.white12),
+                                // URL field — shown for 'url' or 'both'
+                                if (proofType == 'url' ||
+                                    proofType == 'both') ...[
+                                  TextField(
+                                    controller: proofController,
+                                    style: const TextStyle(
+                                        color: Colors.white, fontSize: 13),
+                                    decoration: InputDecoration(
+                                      hintText: 'Paste your proof URL',
+                                      hintStyle: const TextStyle(
+                                          color: Colors.white38,
+                                          fontSize: 13),
+                                      filled: true,
+                                      fillColor: const Color(0xFF0F172A),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 14, vertical: 10),
+                                      border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10),
+                                        borderSide: const BorderSide(
+                                            color: Colors.white12),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10),
+                                        borderSide: const BorderSide(
+                                            color: Colors.white12),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10),
+                                        borderSide: const BorderSide(
+                                            color: Color(0xFF10B981)),
+                                      ),
+                                      suffixIcon: const Icon(
+                                          Icons.link_rounded,
+                                          color: Colors.white38,
+                                          size: 18),
                                     ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                      borderSide: const BorderSide(
-                                          color: Colors.white12),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                      borderSide: const BorderSide(
-                                          color: Color(0xFF10B981)),
-                                    ),
-                                    suffixIcon: const Icon(Icons.link_rounded,
-                                        color: Colors.white38, size: 18),
                                   ),
-                                ),
+                                  if (proofType == 'both')
+                                    const SizedBox(height: 8),
+                                ],
+                                // File picker — shown for 'file' or 'both'
+                                if (proofType == 'file' ||
+                                    proofType == 'both') ...[
+                                  GestureDetector(
+                                    onTap: () => _pickFile(taskerId),
+                                    child: Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 14, vertical: 11),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF0F172A),
+                                        borderRadius:
+                                            BorderRadius.circular(10),
+                                        border: Border.all(
+                                            color: _userFiles[taskerId] !=
+                                                    null
+                                                ? const Color(0xFF10B981)
+                                                : Colors.white12),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            _userFiles[taskerId] != null
+                                                ? Icons.check_circle_rounded
+                                                : Icons
+                                                    .upload_file_rounded,
+                                            color:
+                                                _userFiles[taskerId] != null
+                                                    ? const Color(
+                                                        0xFF10B981)
+                                                    : Colors.white38,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              _userFiles[taskerId] ??
+                                                  'Select proof file',
+                                              style: TextStyle(
+                                                color: _userFiles[taskerId] !=
+                                                        null
+                                                    ? Colors.white
+                                                    : Colors.white38,
+                                                fontSize: 13,
+                                              ),
+                                              overflow:
+                                                  TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          if (_userFiles[taskerId] != null)
+                                            GestureDetector(
+                                              onTap: () => setState(() =>
+                                                  _userFiles[taskerId] =
+                                                      null),
+                                              child: const Icon(Icons.close,
+                                                  color: Colors.white38,
+                                                  size: 16),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
 
                               // COMPLETE / COMPLETED BUTTON
