@@ -8,6 +8,7 @@ class Task {
   final int priorityScore;
   final String? taskUrl;
   final bool hasParticipationBonus;
+  final String proofType;
 
   const Task({
     required this.taskerId,
@@ -19,6 +20,7 @@ class Task {
     required this.priorityScore,
     this.taskUrl,
     required this.hasParticipationBonus,
+    required this.proofType,
   });
 
   factory Task.fromMap(Map<String, dynamic> map) {
@@ -32,6 +34,7 @@ class Task {
       priorityScore: map['priority_score'] as int? ?? 0,
       taskUrl: map['task_url'] as String?,
       hasParticipationBonus: map['has_participation_bonus'] as bool? ?? false,
+      proofType: map['proof_type'] as String? ?? 'none',
     );
   }
 }

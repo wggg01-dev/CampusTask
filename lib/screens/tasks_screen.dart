@@ -18,12 +18,23 @@ class _TasksScreenState extends State<TasksScreen> {
   Map<String, dynamic>? _userProfile;
   bool _profileLoaded = false;
   final Set<String> _submittedTaskIds = {};
+  final Map<String, TextEditingController> _proofUrlControllers = {};
+  final Map<String, String?> _userFiles = {};
 
   @override
   void initState() {
     super.initState();
     _loadProfile();
     _loadSubmittedTasks();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    for (final c in _proofUrlControllers.values) {
+      c.dispose();
+    }
+    super.dispose();
   }
 
   Future<void> _loadProfile() async {
@@ -67,6 +78,24 @@ class _TasksScreenState extends State<TasksScreen> {
     if (!_bioComplete) {
       _showBioBlockedDialog();
       return;
+    }
+
+    // ── Proof validation ─────────────────────────────────────────
+    if (task.proofType != 'none') {
+      final proofUrl = _proofUrlControllers[task.taskerId]?.text ?? '';
+      final userFile = _userFiles[task.taskerId];
+      if (proofUrl.isEmpty && userFile == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Proof was required but wasn't uploaded"),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
     }
 
     if (task.taskUrl != null && task.taskUrl!.trim().isNotEmpty) {
@@ -305,7 +334,7 @@ class _TasksScreenState extends State<TasksScreen> {
               future: Supabase.instance.client
                   .from('tasks')
                   .select(
-                      'id, app_name, title, user_payout_ngn, task_type, slots_left, is_active, created_at, priority_score, task_url, has_participation_bonus')
+                      'id, app_name, title, user_payout_ngn, task_type, slots_left, is_active, created_at, priority_score, task_url, has_participation_bonus, proof_type')
                   .eq('is_active', true)
                   .order('priority_score', ascending: false)
                   .order('created_at', ascending: false),
@@ -460,6 +489,10 @@ class _TasksScreenState extends State<TasksScreen> {
                     final hasUrl =
                         taskUrl != null && taskUrl.trim().isNotEmpty;
                     final hasParticipationBonus = task.hasParticipationBonus;
+                    final proofType = task.proofType;
+                    _proofUrlControllers.putIfAbsent(
+                        taskerId, () => TextEditingController());
+                    final proofController = _proofUrlControllers[taskerId]!;
 
                     return Opacity(
                       opacity: noSlots ? 0.45 : 1.0,
@@ -627,6 +660,43 @@ class _TasksScreenState extends State<TasksScreen> {
                                           color: Colors.white24, fontSize: 11)),
                                 ],
                               ]),
+
+                              // PROOF INPUT (shown when task requires proof)
+                              if (proofType != 'none') ...[
+                                const SizedBox(height: 12),
+                                TextField(
+                                  controller: proofController,
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 13),
+                                  decoration: InputDecoration(
+                                    hintText: 'Paste your proof URL here',
+                                    hintStyle: const TextStyle(
+                                        color: Colors.white38, fontSize: 13),
+                                    filled: true,
+                                    fillColor: const Color(0xFF0F172A),
+                                    contentPadding:
+                                        const EdgeInsets.symmetric(
+                                            horizontal: 14, vertical: 10),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: const BorderSide(
+                                          color: Colors.white12),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: const BorderSide(
+                                          color: Colors.white12),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: const BorderSide(
+                                          color: Color(0xFF10B981)),
+                                    ),
+                                    suffixIcon: const Icon(Icons.link_rounded,
+                                        color: Colors.white38, size: 18),
+                                  ),
+                                ),
+                              ],
 
                               // COMPLETE / COMPLETED BUTTON
                               if (!noSlots) ...[
