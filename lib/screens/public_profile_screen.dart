@@ -250,7 +250,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   Widget _buildExcellenceBlock(Map<String, dynamic> profile) {
     final liked = (profile['total_tasks_liked'] as num?)?.toInt() ?? 0;
     final approved = (profile['total_tasks_approved'] as num?)?.toInt() ?? 0;
-    final ratio = approved > 0 ? liked / approved : 0.0;
     final isHealthy = liked >= (approved / 2);
     final scoreColor =
         isHealthy ? const Color(0xFF10B981) : Colors.orange;
@@ -270,17 +269,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         Text(
           '$liked out of $approved tasks were liked by Taskers',
           style: const TextStyle(color: Colors.white38, fontSize: 12),
-        ),
-        const SizedBox(height: 12),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: LinearProgressIndicator(
-            minHeight: 8,
-            value: ratio.toDouble(),
-            backgroundColor: const Color(0xFF334155),
-            valueColor:
-                AlwaysStoppedAnimation<Color>(scoreColor),
-          ),
         ),
       ],
     );
