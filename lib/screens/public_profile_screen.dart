@@ -205,7 +205,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 separatorBuilder: (_, __) => const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   final review = reviews[index];
-                  final rating = (review['rating'] as num?)?.toInt() ?? 0;
                   final comment = review['comment'] as String? ?? '';
                   final reviewer =
                       review['reviewer_name'] as String? ?? 'Tasker';
@@ -230,39 +229,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                     color: Colors.white70,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600)),
-                            const Spacer(),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: rating >= 4
-                                    ? const Color(0xFF10B981).withOpacity(0.15)
-                                    : rating >= 3
-                                        ? Colors.orange.withOpacity(0.15)
-                                        : Colors.redAccent.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: rating >= 4
-                                      ? const Color(0xFF10B981)
-                                      : rating >= 3
-                                          ? Colors.orange
-                                          : Colors.redAccent,
-                                  width: 0.8,
-                                ),
-                              ),
-                              child: Text(
-                                '$rating / 5',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: rating >= 4
-                                      ? const Color(0xFF10B981)
-                                      : rating >= 3
-                                          ? Colors.orange
-                                          : Colors.redAccent,
-                                ),
-                              ),
-                            ),
                           ],
                         ),
                         if (comment.isNotEmpty) ...[
