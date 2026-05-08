@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 int calculateTrust(Map<String, dynamic> profile) {
-  final likes = (profile['likes_count'] as num?)?.toInt() ?? 0;
-  final total = (profile['total_reviews'] as num?)?.toInt() ?? 0;
-  if (total == 0) return 0;
-  return ((likes / total) * 100).round().clamp(0, 100);
+  final liked = (profile['total_tasks_liked'] as num?)?.toInt() ?? 0;
+  final approved = (profile['total_tasks_approved'] as num?)?.toInt() ?? 0;
+  if (approved == 0) return 0;
+  return ((liked / approved) * 100).round().clamp(0, 100);
 }
 
 class PublicProfileScreen extends StatefulWidget {
@@ -39,7 +39,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     try {
       final data = await Supabase.instance.client
           .from('profiles')
-          .select('nickname, profile_picture_url, likes_count, total_reviews, total_tasks_liked, total_tasks_approved')
+          .select('nickname, profile_picture_url, total_reviews, total_tasks_liked, total_tasks_approved')
           .eq('id', widget.targetUserId)
           .single();
       if (mounted) setState(() { _profile = data; _isLoading = false; });
@@ -78,7 +78,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     final avatarUrl = profile['profile_picture_url'] as String?;
     final initial = nickname.isNotEmpty ? nickname[0].toUpperCase() : '?';
     final trust = calculateTrust(profile);
-    final likes = (profile['likes_count'] as num?)?.toInt() ?? 0;
     final totalReviews = (profile['total_reviews'] as num?)?.toInt() ?? 0;
 
     return SingleChildScrollView(
@@ -133,8 +132,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _statItem('Likes', '$likes', Icons.thumb_up_alt_rounded),
-                _divider(),
                 _statItem('Trust Score', '$trust%', Icons.verified_rounded),
                 _divider(),
                 _statItem('Reviews', '$totalReviews',
@@ -271,9 +268,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
-          "Tasks marked as 'Excellent' by Taskers",
-          style: TextStyle(color: Colors.white38, fontSize: 12),
+        Text(
+          '$liked out of $approved tasks were liked by Taskers',
+          style: const TextStyle(color: Colors.white38, fontSize: 12),
         ),
         const SizedBox(height: 12),
         ClipRRect(
