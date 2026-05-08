@@ -231,17 +231,35 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600)),
                             const Spacer(),
-                            Row(
-                              children: List.generate(
-                                5,
-                                (i) => Icon(
-                                  i < rating
-                                      ? Icons.star_rounded
-                                      : Icons.star_outline_rounded,
-                                  color: i < rating
-                                      ? const Color(0xFFFBBF24)
-                                      : Colors.white24,
-                                  size: 14,
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: rating >= 4
+                                    ? const Color(0xFF10B981).withOpacity(0.15)
+                                    : rating >= 3
+                                        ? Colors.orange.withOpacity(0.15)
+                                        : Colors.redAccent.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: rating >= 4
+                                      ? const Color(0xFF10B981)
+                                      : rating >= 3
+                                          ? Colors.orange
+                                          : Colors.redAccent,
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Text(
+                                '$rating / 5',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: rating >= 4
+                                      ? const Color(0xFF10B981)
+                                      : rating >= 3
+                                          ? Colors.orange
+                                          : Colors.redAccent,
                                 ),
                               ),
                             ),
